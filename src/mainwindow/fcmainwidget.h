@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include "ui_fcmainwidget.h"
+#include <fcservice.h>
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -18,11 +19,10 @@ public:
 	void openFile(const QString& filePath);
 
 private Q_SLOTS:
-	void decodeStream(AVStream* stream);
+	void onStreamItemSelected(int streamIndex);
 
 private:
 	Ui::FCMainWidget ui;
 
-	// ffmpeg variables
-	AVFormatContext* _fmtCtx = nullptr;
+	QSharedPointer<FCService> _service;
 };

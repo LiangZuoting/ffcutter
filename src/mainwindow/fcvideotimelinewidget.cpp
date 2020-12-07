@@ -11,36 +11,42 @@ FCVideoTimelineWidget::~FCVideoTimelineWidget()
 {
 }
 
-void FCVideoTimelineWidget::setStream(AVStream* stream)
+void FCVideoTimelineWidget::setStreamIndex(int streamIndex)
 {
-	_stream = stream;
-	AVCodec* codec = avcodec_find_decoder(stream->codecpar->codec_id);
-	_codecCtx = avcodec_alloc_context3(codec);
-	int ret = avcodec_parameters_to_context(_codecCtx, stream->codecpar);
-	AVDictionary* opts = nullptr;
-	ret = avcodec_open2(_codecCtx, codec, &opts);
+	_streamIndex = streamIndex;
 }
 
-bool FCVideoTimelineWidget::addPacket(AVPacket* packet)
+void FCVideoTimelineWidget::setService(const QSharedPointer<FCService>& service)
 {
-	while (_listFrame.size() >= MAX_LIST_SIZE)
-	{
-		auto pfPair = _listFrame.front();
-		av_packet_unref(pfPair.first);
-		av_frame_unref(pfPair.second);
-		_listFrame.pop_front();
-	}
-	int ret = avcodec_send_packet(_codecCtx, packet);
-	AVFrame* frame = av_frame_alloc();
-	ret = avcodec_receive_frame(_codecCtx, frame);
-	if (ret)
-	{
-		return false;
-	}
-	_listFrame.append({ packet, frame });
+	_service = service;
+}
 
-	FCVideoFrameThemeWidget* widget = new FCVideoFrameThemeWidget(this);
-	ui.timelineLayout->addWidget(widget);
-	widget->setFrame(frame);
-	return true;
+void FCVideoTimelineWidget::decodeOnce()
+{
+	clear();
+	auto f = _service->decodeFrames(_streamIndex, MAX_LIST_SIZE);
+	_vecFrame = f.result();
+	if (_vecFrame.isEmpty())
+	{
+		auto [iErr, strErr] = _service->lastError();
+		if (iErr)
+		{
+			qCritical(QString("decode error %1").arg(strErr).toStdString().data());
+		}
+	}
+	for (auto frame : _vecFrame)
+	{
+		FCVideoFrameThemeWidget* widget = new FCVideoFrameThemeWidget(this);
+		ui.timelineLayout->addWidget(widget);
+		widget->setFrame(frame);
+	}
+}
+
+void FCVideoTimelineWidget::clear()
+{
+	for (auto frame : _vecFrame)
+	{
+		av_frame_unref(frame);
+	}
+	_vecFrame.clear();
 }

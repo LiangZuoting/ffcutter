@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include "ui_fcvideotimelinewidget.h"
+#include <fcservice.h>
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -16,16 +17,18 @@ public:
 	FCVideoTimelineWidget(QWidget *parent = Q_NULLPTR);
 	~FCVideoTimelineWidget();
 
-	void setStream(AVStream* stream);
-	bool addPacket(AVPacket* packet);
+	void setStreamIndex(int streamIndex);
+	void setService(const QSharedPointer<FCService>& service);
+
+	void decodeOnce();
 
 private:
+	void clear();
+
 	inline static const int MAX_LIST_SIZE = 10;
 
 	Ui::FCVideoTimelineWidget ui;
-	AVStream* _stream = nullptr;
-	AVCodecContext* _codecCtx = nullptr;
-	using PFPair = QPair<AVPacket*, AVFrame*>;
-	using PFList = QList<PFPair>;
-	PFList _listFrame;
+	QSharedPointer<FCService> _service;
+	int _streamIndex = -1;
+	QVector<AVFrame*> _vecFrame;
 };

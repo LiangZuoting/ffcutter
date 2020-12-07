@@ -3,6 +3,8 @@
 #include <QWidget>
 #include "ui_fcfileinfowidget.h"
 #include <QTreeWidgetItem>
+#include <QSharedPointer>
+#include <fcservice.h>
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -18,12 +20,10 @@ public:
 	FCFileInfoWidget(QWidget *parent = Q_NULLPTR);
 	~FCFileInfoWidget();
 
-	void setFile(AVFormatContext *fmtCtx);
-
-	void addStream(AVStream* stream);
+	void setService(const QSharedPointer<FCService>& service);
 
 Q_SIGNALS:
-	void parseStream(AVStream* stream);
+	void streamItemSelected(int streamIndex);
 
 private Q_SLOTS:
 	void onItemSelectionChanged();
@@ -31,4 +31,5 @@ private Q_SLOTS:
 private:
 	Ui::FCFileInfoWidget ui;
 	QTreeWidgetItem* _rootItem = nullptr;
+	QSharedPointer<FCService> _service;
 };

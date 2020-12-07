@@ -4,6 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.30717.126
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ffcutter", "ffcutter.vcxproj", "{25BEBDC8-2B76-45BB-B3AF-B38316B9B50D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CDF96F2C-B0D2-4D27-B22E-49C321B8110D} = {CDF96F2C-B0D2-4D27-B22E-49C321B8110D}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fccore", "..\fccore\fccore.vcxproj", "{CDF96F2C-B0D2-4D27-B22E-49C321B8110D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +20,10 @@ Global
 		{25BEBDC8-2B76-45BB-B3AF-B38316B9B50D}.Debug|x64.Build.0 = Debug|x64
 		{25BEBDC8-2B76-45BB-B3AF-B38316B9B50D}.Release|x64.ActiveCfg = Release|x64
 		{25BEBDC8-2B76-45BB-B3AF-B38316B9B50D}.Release|x64.Build.0 = Release|x64
+		{CDF96F2C-B0D2-4D27-B22E-49C321B8110D}.Debug|x64.ActiveCfg = Debug|x64
+		{CDF96F2C-B0D2-4D27-B22E-49C321B8110D}.Debug|x64.Build.0 = Debug|x64
+		{CDF96F2C-B0D2-4D27-B22E-49C321B8110D}.Release|x64.ActiveCfg = Release|x64
+		{CDF96F2C-B0D2-4D27-B22E-49C321B8110D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

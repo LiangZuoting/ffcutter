@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+/fccore/fccore.vcxproj.user
+/fccore/x64
+/ffcutter/ffcutter.vcxproj.user
+/ffcutter/.vs
+/ffcutter/x64

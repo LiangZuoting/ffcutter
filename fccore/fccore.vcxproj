@@ -10,8 +10,15 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\fccore\fccore_global.h" />
+    <ClInclude Include="..\src\fccore\fcservice.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\fccore\fcservice.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{25BEBDC8-2B76-45BB-B3AF-B38316B9B50D}</ProjectGuid>
+    <ProjectGuid>{CDF96F2C-B0D2-4D27-B22E-49C321B8110D}</ProjectGuid>
     <Keyword>QtVS_v303</Keyword>
     <WindowsTargetPlatformVersion Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">10.0.18362.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformVersion Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">10.0.18362.0</WindowsTargetPlatformVersion>
@@ -19,12 +26,12 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -44,39 +51,27 @@
     <Import Project="$(QtMsBuild)\qt_defaults.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <IncludePath>..\src\mainwindow;..\src\thirdparty\ffmpeg\include;D:\ffcutter\src\fccore;$(IncludePath)</IncludePath>
+    <IncludePath>..\src\thirdparty\ffmpeg\include;$(IncludePath)</IncludePath>
     <LibraryPath>..\src\thirdparty\ffmpeg\lib;$(LibraryPath)</LibraryPath>
-    <LibraryWPath>..\src\thirdparty\ffmpeg\bin;$(LibraryWPath)</LibraryWPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ClCompile>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>..\src\mainwindow;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>..\src\mainwindow;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>fccore.lib;avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;postproc.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(TargetDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;postproc.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
-    <PostBuildEvent>
-      <Command>copy /Y $(ProjectDir)..\src\thirdparty\ffmpeg\bin\*.dll $(OutDir)</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
     <QtInstall>msvc2019_64</QtInstall>
-    <QtModules>core;gui;widgets</QtModules>
+    <QtModules>concurrent;core</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="QtSettings">
     <QtInstall>msvc2019_64</QtInstall>
-    <QtModules>core;gui;widgets</QtModules>
+    <QtModules>core</QtModules>
     <QtBuildConfig>release</QtBuildConfig>
   </PropertyGroup>
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.props')">
@@ -89,6 +84,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>FCCORE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -102,43 +98,13 @@
       <DebugInformationFormat>None</DebugInformationFormat>
       <Optimization>MaxSpeed</Optimization>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>FCCORE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <QtRcc Include="..\src\fccutter.qrc" />
-    <QtUic Include="..\src\mainwindow\fcfileinfowidget.ui" />
-    <QtUic Include="..\src\mainwindow\fcmainwidget.ui" />
-    <QtUic Include="..\src\mainwindow\fcmainwindow.ui" />
-    <QtUic Include="..\src\mainwindow\fcvideoframethemewidget.ui" />
-    <QtUic Include="..\src\mainwindow\fcvideotimelinewidget.ui" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\src\mainwindow\fcfileinfowidget.cpp" />
-    <ClCompile Include="..\src\mainwindow\fcmainwidget.cpp" />
-    <ClCompile Include="..\src\mainwindow\fcmainwindow.cpp" />
-    <ClCompile Include="..\src\mainwindow\fcvideoframethemewidget.cpp" />
-    <ClCompile Include="..\src\mainwindow\fcvideotimelinewidget.cpp" />
-    <ClCompile Include="..\src\mainwindow\main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcmainwindow.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcmainwidget.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcfileinfowidget.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcvideoframethemewidget.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcvideotimelinewidget.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
     <Import Project="$(QtMsBuild)\qt.targets" />
