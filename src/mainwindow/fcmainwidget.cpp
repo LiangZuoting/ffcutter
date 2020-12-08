@@ -1,5 +1,6 @@
 #include "fcmainwidget.h"
 #include <QTextCodec>
+#include <QDebug>
 #include <libavutil/error.h>
 #include "fcvideotimelinewidget.h"
 

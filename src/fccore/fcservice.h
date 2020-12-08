@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QThreadPool>
 #include <QMap>
+#include <QPixmap>
+#include <QMutex>
 #include "fcscaler.h"
 extern "C"
 {
@@ -11,6 +13,7 @@ extern "C"
 #include <libavcodec/avcodec.h>
 }
 
+Q_DECLARE_METATYPE(QList<AVStream*>)
 
 class FCCORE_EXPORT FCService : public QObject
 {
@@ -20,6 +23,7 @@ public:
     inline static const int DEMUX_INDEX = -1;
 
     FCService();
+    ~FCService();
 
     /// <summary>
     /// 不可重入
@@ -36,15 +40,17 @@ public:
 
     void seek(int streamIndex, int64_t timestamp);
 
-    void scaleAsync(AVFrame* frame, int destWidth, int destHeight, AVPixelFormat destFormat);
+    void scaleAsync(AVFrame* frame, int destWidth, int destHeight);
 
     QPair<int, QString> lastError();
+
+    void destroy();
 
 Q_SIGNALS:
     void fileOpened(QList<AVStream *>);
     void frameDeocded(AVFrame *);
     void decodeFinished();
-    void scaleFinished()
+    void scaleFinished(QPixmap);
 
 private:
     inline AVFrame* decodeNextFrame(int streamIndex);
@@ -53,6 +59,7 @@ private:
     AVPacket* getPacket(int streamIndex);
     QSharedPointer<FCScaler> getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat);
 
+    QMutex _mutex;
     int _lastError = 0;
     QString _lastErrorString;
     /// <summary>
@@ -71,4 +78,5 @@ private:
     QMap<int, AVStream*> _mapFromIndexToStream;
     QMap<int, AVPacket*> _mapFromIndexToPacket;
     QVector<QSharedPointer<FCScaler>> _vecScaler;
+    QMutex _scaleMutex;
 };

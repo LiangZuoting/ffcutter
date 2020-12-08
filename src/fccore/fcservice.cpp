@@ -1,5 +1,6 @@
 #include "fcservice.h"
 #include <QtConcurrent>
+#include <QImage>
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -7,12 +8,20 @@ extern "C"
 
 FCService::FCService()
 {
+	qRegisterMetaType<QList<AVStream*>>();
+}
+
+FCService::~FCService()
+{
+	destroy();
 }
 
 void FCService::openFileAsync(const QString& filePath)
 {
+	QMutexLocker _(&_mutex);
 	auto t = getThreadPool(DEMUX_INDEX);
-	QtConcurrent::run(t, [&]() {
+	QtConcurrent::run(t, [&, filePath]() {
+		QMutexLocker _(&_mutex);
 		QTime time;
 		time.start();
 		auto url = filePath.toStdString();
@@ -46,8 +55,10 @@ void FCService::openFileAsync(const QString& filePath)
 
 void FCService::decodeOneFrameAsync(int streamIndex)
 {
+	QMutexLocker _(&_mutex);
 	auto t = getThreadPool(streamIndex);
-	QtConcurrent::run(t, [&]() {
+	QtConcurrent::run(t, [=]() {
+		QMutexLocker _(&_mutex);
 		auto frame = decodeNextFrame(streamIndex);
 		emit frameDeocded(frame);
 		emit decodeFinished();
@@ -56,8 +67,10 @@ void FCService::decodeOneFrameAsync(int streamIndex)
 
 void FCService::decodeFramesAsync(int streamIndex, int count)
 {
+	QMutexLocker _(&_mutex);
 	auto t = getThreadPool(streamIndex);
-	QtConcurrent::run(t, [&]() {
+	QtConcurrent::run(t, [=]() {
+		QMutexLocker _(&_mutex);
 		for (int i = 0; i < count; ++i)
 		{
 			auto frame = decodeNextFrame(streamIndex);
@@ -95,13 +108,29 @@ void FCService::seek(int streamIndex, int64_t timestamp)
 	av_seek_frame(_formatContext, streamIndex, timestamp, AVSEEK_FLAG_BACKWARD);
 }
 
-void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat)
+void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight)
 {
-	auto scaler = getScaler(frame, destWidth, destHeight, destFormat);
-	if (!scaler)
-	{
-
-	}
+	QtConcurrent::run([=]() {
+		QMutexLocker _(&_scaleMutex);
+		auto scaler = getScaler(frame, destWidth, destHeight, AV_PIX_FMT_RGB24);
+		if (!scaler)
+		{
+			emit scaleFinished(QPixmap());
+			return;
+		}
+		auto [data, lineSizes] = scaler->scale(frame->data, frame->linesize);
+		if (!data)
+		{
+			emit scaleFinished(QPixmap());
+			return;
+		}
+		QImage image(destWidth, destHeight, QImage::Format_RGB888);
+		for (int i = 0; i < destHeight; ++i)
+		{
+			memcpy(image.scanLine(i), data[0] + i * lineSizes[0], destWidth * (image.depth() / 8));
+		}
+		emit scaleFinished(QPixmap::fromImage(image));
+		});
 }
 
 QPair<int, QString> FCService::lastError()
@@ -110,6 +139,47 @@ QPair<int, QString> FCService::lastError()
 	av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
 	_lastErrorString = QString::fromLocal8Bit(buf);
 	return { _lastError, _lastErrorString };
+}
+
+void FCService::destroy()
+{
+	{
+		QMutexLocker _(&_mutex);
+		if (_formatContext)
+		{
+			avformat_close_input(&_formatContext);
+			_mapFromIndexToStream.clear();
+		}
+		if (auto codecs = _mapFromIndexToCodec.values(); !codecs.isEmpty())
+		{
+			for (auto c : codecs)
+			{
+				avcodec_free_context(&c);
+			}
+			_mapFromIndexToCodec.clear();
+		}
+		if (auto packets = _mapFromIndexToPacket.values(); !packets.isEmpty())
+		{
+			for (auto p : packets)
+			{
+				av_packet_free(&p);
+			}
+			_mapFromIndexToPacket.clear();
+		}
+		if (auto threads = _mapFromIndexToThread.values(); !threads.isEmpty())
+		{
+			for (auto t : threads)
+			{
+				delete t;
+			}
+			_mapFromIndexToThread.clear();
+		}
+	}
+	
+	{
+		QMutexLocker _(&_scaleMutex);
+		_vecScaler.clear();
+	}
 }
 
 AVFrame* FCService::decodeNextFrame(int streamIndex)
@@ -218,11 +288,14 @@ AVPacket* FCService::getPacket(int streamIndex)
 
 QSharedPointer<FCScaler> FCService::getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat)
 {
-	for (auto &i : _vecScaler)
+	if (!_vecScaler.isEmpty())
 	{
-		if (i->equal(frame->width, frame->height, (AVPixelFormat)frame->format, destWidth, destHeight, destFormat))
+		for (auto& i : _vecScaler)
 		{
-			return i;
+			if (i->equal(frame->width, frame->height, (AVPixelFormat)frame->format, destWidth, destHeight, destFormat))
+			{
+				return i;
+			}
 		}
 	}
 	QSharedPointer<FCScaler> scaler = QSharedPointer<FCScaler>(new FCScaler());

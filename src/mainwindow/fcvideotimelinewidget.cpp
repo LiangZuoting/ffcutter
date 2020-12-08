@@ -1,5 +1,6 @@
 #include "fcvideotimelinewidget.h"
 #include "fcvideoframethemewidget.h"
+#include <QDebug>
 
 FCVideoTimelineWidget::FCVideoTimelineWidget(QWidget *parent)
 	: QWidget(parent)
@@ -39,6 +40,7 @@ void FCVideoTimelineWidget::onFrameDecoded(AVFrame *frame)
 	{
 		FCVideoFrameThemeWidget *widget = new FCVideoFrameThemeWidget(this);
 		ui.timelineLayout->addWidget(widget);
+		widget->setService(_service);
 		widget->setFrame(frame);
 		_vecFrame.push_back(frame);
 	}
