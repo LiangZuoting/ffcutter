@@ -2,7 +2,7 @@
 
 #include <QWidget>
 #include "ui_fcvideotimelinewidget.h"
-#include <fcservice.h>
+#include "fcservice.h"
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -21,6 +21,10 @@ public:
 	void setService(const QSharedPointer<FCService>& service);
 
 	void decodeOnce();
+
+private Q_SLOTS:
+	void onFrameDecoded(AVFrame *frame);
+	void onDecodeFinished();
 
 private:
 	void clear();

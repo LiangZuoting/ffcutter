@@ -9,10 +9,10 @@ FCService::FCService()
 {
 }
 
-QFuture<QList<AVStream*>> FCService::openFile(const QString& filePath)
+void FCService::openFileAsync(const QString& filePath)
 {
 	auto t = getThreadPool(DEMUX_INDEX);
-	return QtConcurrent::run(t, [&]() -> QList<AVStream*> {
+	QtConcurrent::run(t, [&]() {
 		QTime time;
 		time.start();
 		auto url = filePath.toStdString();
@@ -40,33 +40,34 @@ QFuture<QList<AVStream*>> FCService::openFile(const QString& filePath)
 			avformat_close_input(&_formatContext);
 		}
 		qDebug() << "open file time " << time.elapsed();
-		return _mapFromIndexToStream.values();
+		emit fileOpened(_mapFromIndexToStream.values());
 		});
 }
 
-QFuture<AVFrame*> FCService::decodeOneFrame(int streamIndex)
+void FCService::decodeOneFrameAsync(int streamIndex)
 {
 	auto t = getThreadPool(streamIndex);
-	return QtConcurrent::run(t, [&]() -> AVFrame* {
-		return decodeNextFrame(streamIndex);
+	QtConcurrent::run(t, [&]() {
+		auto frame = decodeNextFrame(streamIndex);
+		emit frameDeocded(frame);
+		emit decodeFinished();
 		});
 }
 
-QFuture<QVector<AVFrame*>> FCService::decodeFrames(int streamIndex, int count)
+void FCService::decodeFramesAsync(int streamIndex, int count)
 {
 	auto t = getThreadPool(streamIndex);
-	return QtConcurrent::run(t, [&]() -> QVector<AVFrame*> {
-		QVector<AVFrame*> v;
+	QtConcurrent::run(t, [&]() {
 		for (int i = 0; i < count; ++i)
 		{
-			auto f = decodeNextFrame(streamIndex);
-			if (!f)
+			auto frame = decodeNextFrame(streamIndex);
+			if (!frame)
 			{
 				break;
 			}
-			v.push_back(f);
+			emit frameDeocded(frame);
 		}
-		return v;
+		emit decodeFinished();
 		});
 }
 
@@ -89,7 +90,7 @@ QList<AVStream*> FCService::streams() const
 	return _mapFromIndexToStream.values();
 }
 
-QFuture<void> FCService::seek(int streamIndex, int64_t timestamp)
+void FCService::seek(int streamIndex, int64_t timestamp)
 {
 	av_seek_frame(_formatContext, streamIndex, timestamp, AVSEEK_FLAG_BACKWARD);
 }

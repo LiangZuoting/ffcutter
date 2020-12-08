@@ -21,7 +21,6 @@ void FCVideoFrameThemeWidget::setFrame(AVFrame* frame)
 {
 	_frame = frame;
 	ui.ptsLabel->setText(QString::number(_frame->pts));
-	
 	int destW = frame->width / 4;
 	int destH = frame->height / 4;
 	SwsContext* swsCtx = sws_getContext(frame->width, frame->height, (AVPixelFormat)frame->format, destW, destH, AV_PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);

@@ -44,7 +44,7 @@
     <Import Project="$(QtMsBuild)\qt_defaults.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <IncludePath>..\src\mainwindow;..\src\thirdparty\ffmpeg\include;D:\ffcutter\src\fccore;$(IncludePath)</IncludePath>
+    <IncludePath>..\src\mainwindow;..\src\thirdparty\ffmpeg\include;..\src\fccore;$(IncludePath)</IncludePath>
     <LibraryPath>..\src\thirdparty\ffmpeg\lib;$(LibraryPath)</LibraryPath>
     <LibraryWPath>..\src\thirdparty\ffmpeg\bin;$(LibraryWPath)</LibraryWPath>
   </PropertyGroup>

@@ -19,27 +19,30 @@ void FCVideoTimelineWidget::setStreamIndex(int streamIndex)
 void FCVideoTimelineWidget::setService(const QSharedPointer<FCService>& service)
 {
 	_service = service;
+	connect(_service.data(), SIGNAL(frameDeocded(AVFrame *)), this, SLOT(onFrameDecoded(AVFrame *)));
+	connect(_service.data(), SIGNAL(decodeFinished()), this, SLOT(onDecodeFinished()));
 }
 
 void FCVideoTimelineWidget::decodeOnce()
 {
 	clear();
-	auto f = _service->decodeFrames(_streamIndex, MAX_LIST_SIZE);
-	_vecFrame = f.result();
-	if (_vecFrame.isEmpty())
+	_service->decodeFramesAsync(_streamIndex, MAX_LIST_SIZE);
+}
+
+void FCVideoTimelineWidget::onFrameDecoded(AVFrame *frame)
+{
+	if (frame)
 	{
-		auto [iErr, strErr] = _service->lastError();
-		if (iErr)
-		{
-			qCritical(QString("decode error %1").arg(strErr).toStdString().data());
-		}
-	}
-	for (auto frame : _vecFrame)
-	{
-		FCVideoFrameThemeWidget* widget = new FCVideoFrameThemeWidget(this);
+		FCVideoFrameThemeWidget *widget = new FCVideoFrameThemeWidget(this);
 		ui.timelineLayout->addWidget(widget);
 		widget->setFrame(frame);
+		_vecFrame.push_back(frame);
 	}
+}
+
+void FCVideoTimelineWidget::onDecodeFinished()
+{
+
 }
 
 void FCVideoTimelineWidget::clear()

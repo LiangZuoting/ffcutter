@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fccore_global.h"
+#include <QObject>
 #include <QThreadPool>
 #include <QMap>
 #include <QFuture>
@@ -11,8 +12,10 @@ extern "C"
 }
 
 
-class FCCORE_EXPORT FCService
+class FCCORE_EXPORT FCService : public QObject
 {
+    Q_OBJECT
+
 public:
     inline static const int DEMUX_INDEX = -1;
 
@@ -23,17 +26,24 @@ public:
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>
-    QFuture<QList<AVStream*>> openFile(const QString& filePath);
-    QFuture<AVFrame*> decodeOneFrame(int streamIndex);
-    QFuture<QVector<AVFrame*>> decodeFrames(int streamIndex, int count);
+    void openFileAsync(const QString& filePath);
+    void decodeOneFrameAsync(int streamIndex);
+    void decodeFramesAsync(int streamIndex, int count);
 
     AVFormatContext* formatContext() const;
     AVStream* stream(int streamIndex) const;
     QList<AVStream*> streams() const;
 
-    QFuture<void> seek(int streamIndex, int64_t timestamp);
+    void seek(int streamIndex, int64_t timestamp);
+
+    int scale(AVFrame* frame, int destWidth, int destHeight, AVPixelFormat destFormat);
 
     QPair<int, QString> lastError();
+
+Q_SIGNALS:
+    void fileOpened(QList<AVStream *>);
+    void frameDeocded(AVFrame *);
+    void decodeFinished();
 
 private:
     inline AVFrame* decodeNextFrame(int streamIndex);

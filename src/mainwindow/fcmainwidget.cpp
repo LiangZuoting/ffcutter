@@ -18,8 +18,12 @@ FCMainWidget::~FCMainWidget()
 void FCMainWidget::openFile(const QString& filePath)
 {
 	_service.reset(new FCService());
-	auto f = _service->openFile(filePath);
-	f.result();
+	connect(_service.data(), SIGNAL(fileOpened(QList<AVStream *>)), this, SLOT(onFileOpened(QList<AVStream *>)));
+	_service->openFileAsync(filePath);
+}
+
+void FCMainWidget::onFileOpened(QList<AVStream *> streams)
+{
 	ui.fiWidget->setService(_service);
 }
 

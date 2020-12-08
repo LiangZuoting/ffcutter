@@ -19,6 +19,7 @@ public:
 	void openFile(const QString& filePath);
 
 private Q_SLOTS:
+	void onFileOpened(QList<AVStream *> streams);
 	void onStreamItemSelected(int streamIndex);
 
 private:

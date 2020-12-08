@@ -12,9 +12,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\fccore\fccore_global.h" />
-    <ClInclude Include="..\src\fccore\fcservice.h" />
+    <ClInclude Include="..\src\fccore\fcscaler.h" />
+    <QtMoc Include="..\src\fccore\fcservice.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\fccore\fcscaler.cpp" />
     <ClCompile Include="..\src\fccore\fcservice.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

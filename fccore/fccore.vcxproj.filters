@@ -23,7 +23,7 @@
     <ClInclude Include="..\src\fccore\fccore_global.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\fccore\fcservice.h">
+    <ClInclude Include="..\src\fccore\fcscaler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -31,5 +31,13 @@
     <ClCompile Include="..\src\fccore\fcservice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\fccore\fcscaler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="..\src\fccore\fcservice.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
 </Project>
