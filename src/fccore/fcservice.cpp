@@ -98,6 +98,10 @@ void FCService::seek(int streamIndex, int64_t timestamp)
 void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat)
 {
 	auto scaler = getScaler(frame, destWidth, destHeight, destFormat);
+	if (!scaler)
+	{
+
+	}
 }
 
 QPair<int, QString> FCService::lastError()
