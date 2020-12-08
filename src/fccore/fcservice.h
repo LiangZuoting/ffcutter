@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QThreadPool>
 #include <QMap>
-#include <QFuture>
+#include "fcscaler.h"
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -36,7 +36,7 @@ public:
 
     void seek(int streamIndex, int64_t timestamp);
 
-    int scale(AVFrame* frame, int destWidth, int destHeight, AVPixelFormat destFormat);
+    void scaleAsync(AVFrame* frame, int destWidth, int destHeight, AVPixelFormat destFormat);
 
     QPair<int, QString> lastError();
 
@@ -44,12 +44,14 @@ Q_SIGNALS:
     void fileOpened(QList<AVStream *>);
     void frameDeocded(AVFrame *);
     void decodeFinished();
+    void scaleFinished()
 
 private:
     inline AVFrame* decodeNextFrame(int streamIndex);
     QThreadPool* getThreadPool(int streamIndex);
     AVCodecContext* getCodecContext(int streamIndex);
     AVPacket* getPacket(int streamIndex);
+    QSharedPointer<FCScaler> getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat);
 
     int _lastError = 0;
     QString _lastErrorString;
@@ -68,4 +70,5 @@ private:
     /// </summary>
     QMap<int, AVStream*> _mapFromIndexToStream;
     QMap<int, AVPacket*> _mapFromIndexToPacket;
+    QVector<QSharedPointer<FCScaler>> _vecScaler;
 };

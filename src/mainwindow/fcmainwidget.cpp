@@ -25,6 +25,10 @@ void FCMainWidget::openFile(const QString& filePath)
 void FCMainWidget::onFileOpened(QList<AVStream *> streams)
 {
 	ui.fiWidget->setService(_service);
+	if (auto [err, des] = _service->lastError(); err < 0)
+	{
+		qDebug() << metaObject()->className() << " open file error " << des;
+	}
 }
 
 void FCMainWidget::onStreamItemSelected(int streamIndex)

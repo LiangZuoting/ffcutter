@@ -95,6 +95,11 @@ void FCService::seek(int streamIndex, int64_t timestamp)
 	av_seek_frame(_formatContext, streamIndex, timestamp, AVSEEK_FLAG_BACKWARD);
 }
 
+void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat)
+{
+	auto scaler = getScaler(frame, destWidth, destHeight, destFormat);
+}
+
 QPair<int, QString> FCService::lastError()
 {
 	char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
@@ -205,4 +210,23 @@ AVPacket* FCService::getPacket(int streamIndex)
 		_mapFromIndexToPacket.insert(streamIndex, packet);
 		return packet;
 	}
+}
+
+QSharedPointer<FCScaler> FCService::getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat)
+{
+	for (auto &i : _vecScaler)
+	{
+		if (i->equal(frame->width, frame->height, (AVPixelFormat)frame->format, destWidth, destHeight, destFormat))
+		{
+			return i;
+		}
+	}
+	QSharedPointer<FCScaler> scaler = QSharedPointer<FCScaler>(new FCScaler());
+	_lastError = scaler->create(frame->width, frame->height, (AVPixelFormat)frame->format, destWidth, destHeight, destFormat);
+	if (_lastError < 0)
+	{
+		return {};
+	}
+	_vecScaler.push_back(scaler);
+	return scaler;
 }

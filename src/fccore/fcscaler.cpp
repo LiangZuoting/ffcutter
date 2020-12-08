@@ -23,6 +23,11 @@ int FCScaler::create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int d
 	return 0;
 }
 
+FCScaler::~FCScaler()
+{
+	destroy();
+}
+
 QPair<const uint8_t *const *, const int *> FCScaler::scale(const uint8_t *const *srcSlice, const int *srcStride)
 {
 	int ret = sws_scale(_swsContext, srcSlice, srcStride, 0, _srcHeight, _scaledImageData, _scaledImageLineSizes);
@@ -39,4 +44,17 @@ bool FCScaler::equal(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int d
 		_srcHeight == srcHeight && _srcFormat == srcFormat &&
 		_scaledWidth == destWidth && _scaledHeight == destHeight &&
 		_scaledFormat == destFormat;
+}
+
+void FCScaler::destroy()
+{
+	if (_swsContext)
+	{
+		sws_freeContext(_swsContext);
+		_swsContext = nullptr;
+	}
+	if (_scaledImageData)
+	{
+		av_freep(&_scaledImageData[0]);
+	}
 }

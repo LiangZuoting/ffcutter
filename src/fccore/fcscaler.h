@@ -11,12 +11,15 @@ class FCScaler
 {
 public:
 	FCScaler() = default;
+	~FCScaler();
 
 	int create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int destWidth, int destHeight, AVPixelFormat destFormat);
 
 	QPair<const uint8_t *const *, const int*> scale(const uint8_t* const* srcSlice, const int* srcStride);
 
 	bool equal(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int destWidth, int destHeight, AVPixelFormat destFormat);
+
+	void destroy();
 
 private:
 	SwsContext *_swsContext = nullptr;

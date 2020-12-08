@@ -31,7 +31,11 @@ void FCVideoTimelineWidget::decodeOnce()
 
 void FCVideoTimelineWidget::onFrameDecoded(AVFrame *frame)
 {
-	if (frame)
+	if (auto [err, des] = _service->lastError(); err < 0)
+	{
+		qDebug() << metaObject()->className() << " decode frame error " << des;
+	}
+	else
 	{
 		FCVideoFrameThemeWidget *widget = new FCVideoFrameThemeWidget(this);
 		ui.timelineLayout->addWidget(widget);
