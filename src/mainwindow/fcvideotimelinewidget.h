@@ -23,13 +23,13 @@ public:
 	void decodeOnce();
 
 private Q_SLOTS:
-	void onFrameDecoded(AVFrame *frame);
+	void onFrameDecoded(QList<AVFrame*> frames);
 	void onDecodeFinished();
 
 private:
 	void clear();
 
-	inline static const int MAX_LIST_SIZE = 10;
+	inline static const int MAX_LIST_SIZE = 20;
 
 	Ui::FCVideoTimelineWidget ui;
 	QSharedPointer<FCService> _service;

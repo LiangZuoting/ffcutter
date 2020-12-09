@@ -15,6 +15,7 @@ extern "C"
 }
 
 Q_DECLARE_METATYPE(QList<AVStream*>)
+Q_DECLARE_METATYPE(QList<AVFrame*>)
 
 class FCCORE_EXPORT FCService : public QObject
 {
@@ -32,8 +33,8 @@ public:
     /// <param name="filePath"></param>
     /// <returns></returns>
     void openFileAsync(const QString& filePath);
-    void decodeOneFrameAsync(int streamIndex);
-    void decodeFramesAsync(int streamIndex, int count);
+    void decodeOnePacketAsync(int streamIndex);
+    void decodePacketsAsync(int streamIndex, int count);
 
     AVFormatContext* formatContext() const;
     AVStream* stream(int streamIndex) const;
@@ -52,14 +53,15 @@ public:
     void destroy();
 
 Q_SIGNALS:
+    void errorOcurred();
     void fileOpened(QList<AVStream *>);
-    void frameDeocded(AVFrame *);
+    void frameDeocded(QList<AVFrame*>);
     void decodeFinished();
     void scaleFinished(QPixmap);
     void seekFinished();
 
 private:
-    inline AVFrame* decodeNextFrame(int streamIndex);
+    inline QList<AVFrame*> decodeNextPacket(int streamIndex);
     QThreadPool* getThreadPool(int streamIndex);
     AVCodecContext* getCodecContext(int streamIndex);
     AVPacket* getPacket();

@@ -9,6 +9,7 @@ extern "C"
 FCService::FCService()
 {
 	qRegisterMetaType<QList<AVStream*>>();
+	qRegisterMetaType<QList<AVFrame*>>();
 }
 
 FCService::~FCService()
@@ -53,32 +54,37 @@ void FCService::openFileAsync(const QString& filePath)
 		});
 }
 
-void FCService::decodeOneFrameAsync(int streamIndex)
+void FCService::decodeOnePacketAsync(int streamIndex)
 {
 	QMutexLocker _(&_mutex);
 	auto t = getThreadPool(streamIndex);
 	QtConcurrent::run(t, [=]() {
 		QMutexLocker _(&_mutex);
-		auto frame = decodeNextFrame(streamIndex);
-		emit frameDeocded(frame);
+		auto frames = decodeNextPacket(streamIndex);
+		emit frameDeocded(frames);
 		emit decodeFinished();
 		});
 }
 
-void FCService::decodeFramesAsync(int streamIndex, int count)
+void FCService::decodePacketsAsync(int streamIndex, int count)
 {
 	QMutexLocker _(&_mutex);
 	auto t = getThreadPool(streamIndex);
 	QtConcurrent::run(t, [=]() {
 		QMutexLocker _(&_mutex);
-		for (int i = 0; i < count; ++i)
+		for (int i = 0; i < count;)
 		{
-			auto frame = decodeNextFrame(streamIndex);
-			if (!frame)
+			auto frames = decodeNextPacket(streamIndex);
+			if (auto [err, errStr] = lastError(); err)
 			{
-				break;
+				emit errorOcurred();
+				return;
 			}
-			emit frameDeocded(frame);
+			if (!frames.isEmpty())
+			{
+				++i;
+				emit frameDeocded(frames);
+			}
 		}
 		emit decodeFinished();
 		});
@@ -108,6 +114,7 @@ void FCService::seekAsync(int streamIndex, double timestampInSecond)
 	auto stream = _mapFromIndexToStream[streamIndex];
 	int64_t timestamp = timestampInSecond * (stream->time_base.den / stream->time_base.num);
 	av_seek_frame(_formatContext, streamIndex, timestamp, AVSEEK_FLAG_BACKWARD);
+	avcodec_flush_buffers(getCodecContext(streamIndex));
 }
 
 void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight)
@@ -148,7 +155,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 	vcc->time_base = stream->time_base;
 	vcc->width = muxEntry->width;
 	vcc->height = muxEntry->height;
-	vcc->pix_fmt = AV_PIX_FMT_RGB8;
+	vcc->pix_fmt = AV_PIX_FMT_GRAY8;
 	vcc->bit_rate = 400000;
 	vcc->framerate = stream->avg_frame_rate;
 	auto vs = avformat_new_stream(ofc, nullptr);
@@ -165,7 +172,8 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 	_lastError = avio_open(&ofc->pb, muxEntry->filePath, AVIO_FLAG_WRITE);
 	_lastError = avformat_write_header(ofc, nullptr);
 
-	//_lastError = av_seek_frame(_formatContext, muxEntry->vStreamIndex, muxEntry->startPts, AVSEEK_FLAG_BACKWARD);
+// 	_lastError = av_seek_frame(_formatContext, muxEntry->vStreamIndex, muxEntry->startPts, AVSEEK_FLAG_BACKWARD);
+// 	avcodec_flush_buffers(getCodecContext(muxEntry->vStreamIndex));
 	auto packet = getPacket();
 	int count = muxEntry->duration;
 	if (muxEntry->durationUnit == DURATION_SECOND)
@@ -175,46 +183,54 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 	auto outPacket = av_packet_alloc();
 	while (count--)
 	{
-		auto frame = decodeNextFrame(muxEntry->vStreamIndex);
-		if (frame->pts < muxEntry->startPts)
-		{
-			continue;
-		}
-		if (muxEntry->durationUnit == DURATION_SECOND && frame->pts > (muxEntry->startPts + muxEntry->duration * (stream->time_base.num / stream->time_base.den)))
+		auto frames = decodeNextPacket(muxEntry->vStreamIndex);
+		if (frames.isEmpty())
 		{
 			break;
 		}
-
-		_lastError = avcodec_send_frame(vcc, frame);
-		if (_lastError < 0)
+		for (auto frame : frames)
 		{
-			break;
-		}
-		while (_lastError >= 0)
-		{
-			_lastError = avcodec_receive_packet(vcc, outPacket);
-			if (_lastError == AVERROR(EAGAIN) || _lastError == AVERROR_EOF)
+			if (frame->pts < muxEntry->startPts)
 			{
-				_lastError = 0;
+				continue;
+			}
+			if (muxEntry->durationUnit == DURATION_SECOND && frame->pts > (muxEntry->startPts + muxEntry->duration * (stream->time_base.num / stream->time_base.den)))
+			{
 				break;
 			}
-			if (_lastError < 0) 
-			{
-				{
-					char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-					av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
-					_lastErrorString = QString::fromLocal8Bit(buf);
-				}
-			}
-			_lastError = av_interleaved_write_frame(ofc, outPacket);
+
+			_lastError = avcodec_send_frame(vcc, frame);
 			if (_lastError < 0)
 			{
+				break;
+			}
+			while (_lastError >= 0)
+			{
+				_lastError = avcodec_receive_packet(vcc, outPacket);
+				if (_lastError == AVERROR(EAGAIN) || _lastError == AVERROR_EOF)
 				{
-					char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-					av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
-					_lastErrorString = QString::fromLocal8Bit(buf);
+					_lastError = 0;
+					break;
 				}
-				assert(0);
+				if (_lastError < 0)
+				{
+					{
+						char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+						av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
+						_lastErrorString = QString::fromLocal8Bit(buf);
+					}
+				}
+				av_packet_rescale_ts(outPacket, vcc->time_base, vs->time_base);
+				_lastError = av_interleaved_write_frame(ofc, outPacket);
+				if (_lastError < 0)
+				{
+					{
+						char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+						av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
+						_lastErrorString = QString::fromLocal8Bit(buf);
+					}
+					assert(0);
+				}
 			}
 		}
 	}
@@ -276,18 +292,18 @@ void FCService::destroy()
 	}
 }
 
-AVFrame* FCService::decodeNextFrame(int streamIndex)
+QList<AVFrame*> FCService::decodeNextPacket(int streamIndex)
 {
 	QTime time;
 	time.start();
+	QList<AVFrame*> frames;
 	auto codecContext = getCodecContext(streamIndex);
 	if (!codecContext)
 	{
-		return nullptr;
+		return frames;
 	}
 	auto packet = getPacket();
-	AVFrame* frame = av_frame_alloc();
-	while (true)
+	while (!_lastError)
 	{
 		_lastError = av_read_frame(_formatContext, packet);
 		if (_lastError < 0)
@@ -303,20 +319,26 @@ AVFrame* FCService::decodeNextFrame(int streamIndex)
 		{
 			break;
 		}
-		_lastError = avcodec_receive_frame(codecContext, frame);
-		if (!_lastError)
+		while (_lastError >= 0)
 		{
-			qDebug() << "decode frame time " << time.elapsed();
-			return frame;
+			AVFrame* frame = av_frame_alloc();
+			_lastError = avcodec_receive_frame(codecContext, frame);
+			if (!_lastError)
+			{
+				qDebug() << "decode frame time " << time.elapsed();
+				frames.push_back(frame);
+				continue;
+			}
+			av_frame_free(&frame);
+			if (_lastError == AVERROR(EAGAIN) || _lastError == AVERROR_EOF)
+			{
+				_lastError = 0;
+				return frames;
+			}
+			break;
 		}
-		if (_lastError == AVERROR(EAGAIN))
-		{
-			continue;
-		}
-		break;
 	}
-	av_frame_free(&frame);
-	return nullptr;
+	return frames;
 }
 
 QThreadPool* FCService::getThreadPool(int streamIndex)
