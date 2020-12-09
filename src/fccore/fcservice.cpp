@@ -325,13 +325,13 @@ QList<AVFrame*> FCService::decodeNextPacket(int streamIndex)
 			_lastError = avcodec_receive_frame(codecContext, frame);
 			if (!_lastError)
 			{
-				qDebug() << "decode frame time " << time.elapsed();
 				frames.push_back(frame);
 				continue;
 			}
 			av_frame_free(&frame);
 			if (_lastError == AVERROR(EAGAIN) || _lastError == AVERROR_EOF)
 			{
+				qDebug() << "decode frame time " << time.elapsed();
 				_lastError = 0;
 				return frames;
 			}
