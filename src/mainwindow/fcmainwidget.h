@@ -22,6 +22,7 @@ private Q_SLOTS:
 	void onFileOpened(QList<AVStream *> streams);
 	void onStreamItemSelected(int streamIndex);
 	void onFastSeekClicked();
+	void onGifClicked();
 
 private:
 	Ui::FCMainWidget ui;

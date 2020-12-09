@@ -7,6 +7,7 @@
 #include <QPixmap>
 #include <QMutex>
 #include "fcscaler.h"
+#include "fcmuxentry.h"
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -42,6 +43,8 @@ public:
 
     void scaleAsync(AVFrame* frame, int destWidth, int destHeight);
 
+    void saveAsync(const FCMuxEntry& entry);
+
     QPair<int, QString> lastError();
 
     double timestampToSecond(int streamIndex, int64_t timestamp);
@@ -59,7 +62,7 @@ private:
     inline AVFrame* decodeNextFrame(int streamIndex);
     QThreadPool* getThreadPool(int streamIndex);
     AVCodecContext* getCodecContext(int streamIndex);
-    AVPacket* getPacket(int streamIndex);
+    AVPacket* getPacket();
     QSharedPointer<FCScaler> getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat);
 
     QMutex _mutex;
@@ -79,7 +82,7 @@ private:
     /// map from stream index to stream struct
     /// </summary>
     QMap<int, AVStream*> _mapFromIndexToStream;
-    QMap<int, AVPacket*> _mapFromIndexToPacket;
+    AVPacket *_readPacket = nullptr;
     QVector<QSharedPointer<FCScaler>> _vecScaler;
     QMutex _scaleMutex;
 };

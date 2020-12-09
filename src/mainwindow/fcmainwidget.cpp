@@ -11,6 +11,7 @@ FCMainWidget::FCMainWidget(QWidget *parent)
 
 	connect(ui.fiWidget, SIGNAL(streamItemSelected(int)), this, SLOT(onStreamItemSelected(int)));
 	connect(ui.fastSeekBtn, SIGNAL(clicked()), this, SLOT(onFastSeekClicked()));
+	connect(ui.gifBtn, SIGNAL(clicked()), this, SLOT(onGifClicked()));
 }
 
 FCMainWidget::~FCMainWidget()
@@ -64,5 +65,21 @@ void FCMainWidget::onFastSeekClicked()
 		{
 			widget->decodeOnce();
 		}
+	}
+}
+
+void FCMainWidget::onGifClicked()
+{
+	auto stream = _service->stream(_streamIndex);
+	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+	{
+		FCMuxEntry entry;
+		entry.filePath = "d:\\1.gif";
+		entry.width = stream->codecpar->width;
+		entry.height = stream->codecpar->height;
+		entry.duration = 90;
+		entry.durationUnit = DURATION_FRAME_COUNT;
+		entry.vStreamIndex = _streamIndex;
+		_service->saveAsync(entry);
 	}
 }

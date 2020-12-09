@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClInclude Include="..\src\fccore\fccore_global.h" />
     <ClInclude Include="..\src\fccore\fcscaler.h" />
+    <ClInclude Include="..\src\fccore\fcmuxentry.h" />
     <QtMoc Include="..\src\fccore\fcservice.h" />
   </ItemGroup>
   <ItemGroup>

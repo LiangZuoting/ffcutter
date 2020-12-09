@@ -135,6 +135,96 @@ void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight)
 		});
 }
 
+void FCService::saveAsync(const FCMuxEntry &entry)
+{
+	FCMuxEntry *muxEntry = new FCMuxEntry(entry);
+	auto stream = _mapFromIndexToStream[muxEntry->vStreamIndex];
+
+	AVFormatContext *ofc = nullptr;
+	_lastError = avformat_alloc_output_context2(&ofc, nullptr, nullptr, muxEntry->filePath);
+
+	auto vc = avcodec_find_encoder(ofc->oformat->video_codec);
+	auto vcc = avcodec_alloc_context3(vc);
+	vcc->time_base = stream->time_base;
+	vcc->width = muxEntry->width;
+	vcc->height = muxEntry->height;
+	vcc->pix_fmt = AV_PIX_FMT_RGB8;
+	vcc->bit_rate = 400000;
+	vcc->framerate = stream->avg_frame_rate;
+	auto vs = avformat_new_stream(ofc, nullptr);
+	vs->time_base = vcc->time_base;
+	vs->avg_frame_rate = stream->avg_frame_rate;
+	vs->r_frame_rate = vs->avg_frame_rate;
+	_lastError = avcodec_parameters_from_context(vs->codecpar, vcc);
+	_lastError = avcodec_open2(vcc, vc, nullptr);
+	{
+		char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+		av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
+		_lastErrorString = QString::fromLocal8Bit(buf);
+	}
+	_lastError = avio_open(&ofc->pb, muxEntry->filePath, AVIO_FLAG_WRITE);
+	_lastError = avformat_write_header(ofc, nullptr);
+
+	//_lastError = av_seek_frame(_formatContext, muxEntry->vStreamIndex, muxEntry->startPts, AVSEEK_FLAG_BACKWARD);
+	auto packet = getPacket();
+	int count = muxEntry->duration;
+	if (muxEntry->durationUnit == DURATION_SECOND)
+	{
+		count = INT_MAX;
+	}
+	auto outPacket = av_packet_alloc();
+	while (count--)
+	{
+		auto frame = decodeNextFrame(muxEntry->vStreamIndex);
+		if (frame->pts < muxEntry->startPts)
+		{
+			continue;
+		}
+		if (muxEntry->durationUnit == DURATION_SECOND && frame->pts > (muxEntry->startPts + muxEntry->duration * (stream->time_base.num / stream->time_base.den)))
+		{
+			break;
+		}
+
+		_lastError = avcodec_send_frame(vcc, frame);
+		if (_lastError < 0)
+		{
+			break;
+		}
+		while (_lastError >= 0)
+		{
+			_lastError = avcodec_receive_packet(vcc, outPacket);
+			if (_lastError == AVERROR(EAGAIN) || _lastError == AVERROR_EOF)
+			{
+				_lastError = 0;
+				break;
+			}
+			if (_lastError < 0) 
+			{
+				{
+					char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+					av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
+					_lastErrorString = QString::fromLocal8Bit(buf);
+				}
+			}
+			_lastError = av_interleaved_write_frame(ofc, outPacket);
+			if (_lastError < 0)
+			{
+				{
+					char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+					av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
+					_lastErrorString = QString::fromLocal8Bit(buf);
+				}
+				assert(0);
+			}
+		}
+	}
+	_lastError = av_write_trailer(ofc);
+
+	avcodec_free_context(&vcc);
+	avio_closep(&ofc->pb);
+	avformat_free_context(ofc);
+}
+
 QPair<int, QString> FCService::lastError()
 {
 	char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
@@ -166,13 +256,9 @@ void FCService::destroy()
 			}
 			_mapFromIndexToCodec.clear();
 		}
-		if (auto packets = _mapFromIndexToPacket.values(); !packets.isEmpty())
+		if (_readPacket)
 		{
-			for (auto p : packets)
-			{
-				av_packet_free(&p);
-			}
-			_mapFromIndexToPacket.clear();
+			av_packet_free(&_readPacket);
 		}
 		if (auto threads = _mapFromIndexToThread.values(); !threads.isEmpty())
 		{
@@ -199,7 +285,7 @@ AVFrame* FCService::decodeNextFrame(int streamIndex)
 	{
 		return nullptr;
 	}
-	auto packet = getPacket(streamIndex);
+	auto packet = getPacket();
 	AVFrame* frame = av_frame_alloc();
 	while (true)
 	{
@@ -278,20 +364,14 @@ AVCodecContext* FCService::getCodecContext(int streamIndex)
 	}
 }
 
-AVPacket* FCService::getPacket(int streamIndex)
+AVPacket* FCService::getPacket()
 {
-	if (auto iter = _mapFromIndexToPacket.constFind(streamIndex); iter != _mapFromIndexToPacket.cend())
+	if (!_readPacket)
 	{
-		auto packet = iter.value();
-		av_init_packet(packet);
-		return packet;
+		_readPacket = av_packet_alloc();
 	}
-	else
-	{
-		AVPacket* packet = av_packet_alloc();
-		_mapFromIndexToPacket.insert(streamIndex, packet);
-		return packet;
-	}
+	av_init_packet(_readPacket);
+	return _readPacket;
 }
 
 QSharedPointer<FCScaler> FCService::getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat)
