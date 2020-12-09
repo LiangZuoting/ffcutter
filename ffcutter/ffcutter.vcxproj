@@ -114,14 +114,14 @@
     <QtUic Include="..\src\mainwindow\fcfileinfowidget.ui" />
     <QtUic Include="..\src\mainwindow\fcmainwidget.ui" />
     <QtUic Include="..\src\mainwindow\fcmainwindow.ui" />
-    <QtUic Include="..\src\mainwindow\fcvideoframethemewidget.ui" />
+    <QtUic Include="..\src\mainwindow\fcvideoframewidget.ui" />
     <QtUic Include="..\src\mainwindow\fcvideotimelinewidget.ui" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\mainwindow\fcfileinfowidget.cpp" />
     <ClCompile Include="..\src\mainwindow\fcmainwidget.cpp" />
     <ClCompile Include="..\src\mainwindow\fcmainwindow.cpp" />
-    <ClCompile Include="..\src\mainwindow\fcvideoframethemewidget.cpp" />
+    <ClCompile Include="..\src\mainwindow\fcvideoframewidget.cpp" />
     <ClCompile Include="..\src\mainwindow\fcvideotimelinewidget.cpp" />
     <ClCompile Include="..\src\mainwindow\main.cpp" />
   </ItemGroup>
@@ -135,7 +135,7 @@
     <QtMoc Include="..\src\mainwindow\fcfileinfowidget.h" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcvideoframethemewidget.h" />
+    <QtMoc Include="..\src\mainwindow\fcvideoframewidget.h" />
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="..\src\mainwindow\fcvideotimelinewidget.h" />

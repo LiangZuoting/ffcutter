@@ -103,8 +103,10 @@ QList<AVStream*> FCService::streams() const
 	return _mapFromIndexToStream.values();
 }
 
-void FCService::seek(int streamIndex, int64_t timestamp)
+void FCService::seekAsync(int streamIndex, double timestampInSecond)
 {
+	auto stream = _mapFromIndexToStream[streamIndex];
+	int64_t timestamp = timestampInSecond * (stream->time_base.den / stream->time_base.num);
 	av_seek_frame(_formatContext, streamIndex, timestamp, AVSEEK_FLAG_BACKWARD);
 }
 
@@ -139,6 +141,12 @@ QPair<int, QString> FCService::lastError()
 	av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
 	_lastErrorString = QString::fromLocal8Bit(buf);
 	return { _lastError, _lastErrorString };
+}
+
+double FCService::timestampToSecond(int streamIndex, int64_t timestamp)
+{
+	auto stream = _mapFromIndexToStream[streamIndex];
+	return double(timestamp) / (stream->time_base.den / stream->time_base.num);
 }
 
 void FCService::destroy()

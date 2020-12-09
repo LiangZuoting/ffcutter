@@ -38,11 +38,13 @@ public:
     AVStream* stream(int streamIndex) const;
     QList<AVStream*> streams() const;
 
-    void seek(int streamIndex, int64_t timestamp);
+    void seekAsync(int streamIndex, double timestampInSecond);
 
     void scaleAsync(AVFrame* frame, int destWidth, int destHeight);
 
     QPair<int, QString> lastError();
+
+    double timestampToSecond(int streamIndex, int64_t timestamp);
 
     void destroy();
 
@@ -51,6 +53,7 @@ Q_SIGNALS:
     void frameDeocded(AVFrame *);
     void decodeFinished();
     void scaleFinished(QPixmap);
+    void seekFinished();
 
 private:
     inline AVFrame* decodeNextFrame(int streamIndex);

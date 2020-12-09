@@ -1,5 +1,5 @@
 #include "fcvideotimelinewidget.h"
-#include "fcvideoframethemewidget.h"
+#include "fcvideoframewidget.h"
 #include <QDebug>
 
 FCVideoTimelineWidget::FCVideoTimelineWidget(QWidget *parent)
@@ -38,11 +38,11 @@ void FCVideoTimelineWidget::onFrameDecoded(AVFrame *frame)
 	}
 	else
 	{
-		FCVideoFrameThemeWidget *widget = new FCVideoFrameThemeWidget(this);
+		FCVideoFrameWidget *widget = new FCVideoFrameWidget(this);
 		ui.timelineLayout->addWidget(widget);
 		widget->setService(_service);
+		widget->setStreamIndex(_streamIndex);
 		widget->setFrame(frame);
-		_vecFrame.push_back(frame);
 	}
 }
 
@@ -53,9 +53,12 @@ void FCVideoTimelineWidget::onDecodeFinished()
 
 void FCVideoTimelineWidget::clear()
 {
-	for (auto frame : _vecFrame)
+	if (auto children = ui.timelineLayout->findChildren<FCVideoFrameWidget*>(); !children.isEmpty())
 	{
-		av_frame_unref(frame);
+		for (auto c : children)
+		{
+			ui.timelineLayout->removeWidget(c);
+			delete c;
+		}
 	}
-	_vecFrame.clear();
 }

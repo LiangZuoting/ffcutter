@@ -21,9 +21,11 @@ public:
 private Q_SLOTS:
 	void onFileOpened(QList<AVStream *> streams);
 	void onStreamItemSelected(int streamIndex);
+	void onFastSeekClicked();
 
 private:
 	Ui::FCMainWidget ui;
 
 	QSharedPointer<FCService> _service;
+	int _streamIndex = -1;
 };

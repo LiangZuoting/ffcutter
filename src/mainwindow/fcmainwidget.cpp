@@ -10,6 +10,7 @@ FCMainWidget::FCMainWidget(QWidget *parent)
 	ui.setupUi(this);
 
 	connect(ui.fiWidget, SIGNAL(streamItemSelected(int)), this, SLOT(onStreamItemSelected(int)));
+	connect(ui.fastSeekBtn, SIGNAL(clicked()), this, SLOT(onFastSeekClicked()));
 }
 
 FCMainWidget::~FCMainWidget()
@@ -34,6 +35,7 @@ void FCMainWidget::onFileOpened(QList<AVStream *> streams)
 
 void FCMainWidget::onStreamItemSelected(int streamIndex)
 {
+	_streamIndex = streamIndex;
 	auto stream = _service->stream(streamIndex);
 	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
 	{
@@ -42,5 +44,25 @@ void FCMainWidget::onStreamItemSelected(int streamIndex)
 		widget->setStreamIndex(streamIndex);
 		widget->setService(_service);
 		widget->decodeOnce();
+	}
+}
+
+void FCMainWidget::onFastSeekClicked()
+{
+	if (_streamIndex < 0)
+	{
+		return;
+	}
+	
+	_service->seekAsync(_streamIndex, ui.seekEdit->text().toDouble());
+
+	auto stream = _service->stream(_streamIndex);
+	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+	{
+		FCVideoTimelineWidget *widget = findChild<FCVideoTimelineWidget*>();
+		if (widget)
+		{
+			widget->decodeOnce();
+		}
 	}
 }

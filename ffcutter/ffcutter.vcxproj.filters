@@ -44,10 +44,10 @@
     <ClCompile Include="..\src\mainwindow\fcfileinfowidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\mainwindow\fcvideoframethemewidget.cpp">
+    <ClCompile Include="..\src\mainwindow\fcvideotimelinewidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\mainwindow\fcvideotimelinewidget.cpp">
+    <ClCompile Include="..\src\mainwindow\fcvideoframewidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -61,10 +61,10 @@
     <QtMoc Include="..\src\mainwindow\fcfileinfowidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="..\src\mainwindow\fcvideoframethemewidget.h">
+    <QtMoc Include="..\src\mainwindow\fcvideotimelinewidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="..\src\mainwindow\fcvideotimelinewidget.h">
+    <QtMoc Include="..\src\mainwindow\fcvideoframewidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
@@ -75,10 +75,10 @@
     <QtUic Include="..\src\mainwindow\fcfileinfowidget.ui">
       <Filter>Form Files</Filter>
     </QtUic>
-    <QtUic Include="..\src\mainwindow\fcvideoframethemewidget.ui">
+    <QtUic Include="..\src\mainwindow\fcvideotimelinewidget.ui">
       <Filter>Form Files</Filter>
     </QtUic>
-    <QtUic Include="..\src\mainwindow\fcvideotimelinewidget.ui">
+    <QtUic Include="..\src\mainwindow\fcvideoframewidget.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>

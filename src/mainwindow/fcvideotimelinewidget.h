@@ -34,5 +34,4 @@ private:
 	Ui::FCVideoTimelineWidget ui;
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;
-	QVector<AVFrame*> _vecFrame;
 };
