@@ -39,6 +39,33 @@ void FCVideoFrameWidget::setFrame(AVFrame* frame)
 	_service->scaleAsync(frame, AV_PIX_FMT_RGB24, frame->width / 4, frame->height / 4);
 }
 
+void FCVideoFrameWidget::setSelection(bool select)
+{
+	setStyleSheet(select ? "color: green;" : "");
+}
+
+AVFrame* FCVideoFrameWidget::frame() const
+{
+	return _frame;
+}
+
+void FCVideoFrameWidget::mousePressEvent(QMouseEvent* event)
+{
+	_pressed = true;
+	QWidget::mousePressEvent(event);
+}
+
+void FCVideoFrameWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+	if (_pressed)
+	{
+		_pressed = false;
+		setSelection(true);
+		emit clicked();
+	}
+	QWidget::mouseReleaseEvent(event);
+}
+
 void FCVideoFrameWidget::onScaleFinished(QPixmap pixmap)
 {
 	ui.thumbnailLabel->setPixmap(pixmap);

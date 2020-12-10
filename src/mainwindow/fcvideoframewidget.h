@@ -20,6 +20,17 @@ public:
 	void setStreamIndex(int streamIndex);
 	void setFrame(AVFrame* frame);
 
+	void setSelection(bool select);
+
+	AVFrame* frame() const;
+
+protected:
+	void mousePressEvent(QMouseEvent* event) override;
+	void mouseReleaseEvent(QMouseEvent* event) override;
+
+Q_SIGNALS:
+	void clicked();
+
 private Q_SLOTS:
 	void onScaleFinished(QPixmap pixmap);
 
@@ -28,4 +39,5 @@ private:
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;
 	AVFrame* _frame = nullptr;
+	bool _pressed = false;
 };

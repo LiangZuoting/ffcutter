@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include "ui_fcvideotimelinewidget.h"
+#include "fcvideoframewidget.h"
 #include "fcservice.h"
 extern "C"
 {
@@ -22,9 +23,12 @@ public:
 
 	void decodeOnce();
 
+	int64_t selectedPts() const;
+
 private Q_SLOTS:
 	void onFrameDecoded(QList<AVFrame*> frames);
 	void onDecodeFinished();
+	void onVideoFrameClicked();
 
 private:
 	void clear();
@@ -34,4 +38,5 @@ private:
 	Ui::FCVideoTimelineWidget ui;
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;
+	FCVideoFrameWidget* _selected = nullptr;
 };

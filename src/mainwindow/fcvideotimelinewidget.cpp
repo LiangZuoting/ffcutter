@@ -1,5 +1,4 @@
 #include "fcvideotimelinewidget.h"
-#include "fcvideoframewidget.h"
 #include <QDebug>
 
 FCVideoTimelineWidget::FCVideoTimelineWidget(QWidget *parent)
@@ -30,6 +29,15 @@ void FCVideoTimelineWidget::decodeOnce()
 	_service->decodePacketsAsync(_streamIndex, MAX_LIST_SIZE);
 }
 
+int64_t FCVideoTimelineWidget::selectedPts() const
+{
+	if (_selected)
+	{
+		return _selected->frame()->pts;
+	}
+	return 0;
+}
+
 void FCVideoTimelineWidget::onFrameDecoded(QList<AVFrame*> frames)
 {
 	if (auto [err, des] = _service->lastError(); err < 0)
@@ -41,6 +49,7 @@ void FCVideoTimelineWidget::onFrameDecoded(QList<AVFrame*> frames)
 		for (auto frame : frames)
 		{
 			FCVideoFrameWidget* widget = new FCVideoFrameWidget(this);
+			connect(widget, SIGNAL(clicked()), SLOT(onVideoFrameClicked()));
 			ui.timelineLayout->addWidget(widget);
 			widget->setService(_service);
 			widget->setStreamIndex(_streamIndex);
@@ -52,6 +61,20 @@ void FCVideoTimelineWidget::onFrameDecoded(QList<AVFrame*> frames)
 void FCVideoTimelineWidget::onDecodeFinished()
 {
 
+}
+
+void FCVideoTimelineWidget::onVideoFrameClicked()
+{
+	auto widget = qobject_cast<FCVideoFrameWidget*>(sender());
+	_selected = widget;
+
+	if (auto children = findChildren<FCVideoFrameWidget*>(); !children.isEmpty())
+	{
+		for (auto c : children)
+		{
+			c->setSelection(c == widget);
+		}
+	}
 }
 
 void FCVideoTimelineWidget::clear()

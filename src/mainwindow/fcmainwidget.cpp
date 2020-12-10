@@ -11,7 +11,10 @@ FCMainWidget::FCMainWidget(QWidget *parent)
 
 	connect(ui.fiWidget, SIGNAL(streamItemSelected(int)), this, SLOT(onStreamItemSelected(int)));
 	connect(ui.fastSeekBtn, SIGNAL(clicked()), this, SLOT(onFastSeekClicked()));
+	connect(ui.setStartBtn, SIGNAL(clicked()), this, SLOT(onSetStartClicked()));
 	connect(ui.gifBtn, SIGNAL(clicked()), this, SLOT(onGifClicked()));
+
+	ui.durationUnitComboBox->addItems({ u8"ึก", u8"ร๋" });
 }
 
 FCMainWidget::~FCMainWidget()
@@ -68,19 +71,30 @@ void FCMainWidget::onFastSeekClicked()
 	}
 }
 
+void FCMainWidget::onSetStartClicked()
+{
+	auto stream = _service->stream(_streamIndex);
+	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+	{
+		FCVideoTimelineWidget* widget = findChild<FCVideoTimelineWidget*>();
+		if (widget)
+		{
+			_muxEntry.startPts = widget->selectedPts();
+		}
+	}
+}
+
 void FCMainWidget::onGifClicked()
 {
 	auto stream = _service->stream(_streamIndex);
 	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
 	{
-		FCMuxEntry entry;
-		entry.filePath = "d:\\1.gif";
-		entry.width = stream->codecpar->width / 2;
-		entry.height = stream->codecpar->height / 2;
-		entry.startPts = 10 * 60 * 1000;
-		entry.duration = 3;
-		entry.durationUnit = DURATION_SECOND;
-		entry.vStreamIndex = _streamIndex;
-		_service->saveAsync(entry);
+		_muxEntry.filePath = "d:\\1.gif";
+		_muxEntry.width = stream->codecpar->width / 2;
+		_muxEntry.height = stream->codecpar->height / 2;
+		_muxEntry.duration = ui.durationEdit->text().toDouble();
+		_muxEntry.durationUnit = (FCDurationUnit)ui.durationUnitComboBox->currentIndex();
+		_muxEntry.vStreamIndex = _streamIndex;
+		_service->saveAsync(_muxEntry);
 	}
 }

@@ -155,7 +155,8 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 	auto stream = _mapFromIndexToStream[muxEntry->vStreamIndex];
 
 	AVFormatContext *ofc = nullptr;
-	_lastError = avformat_alloc_output_context2(&ofc, nullptr, nullptr, muxEntry->filePath);
+	auto filePath = muxEntry->filePath.toStdString();
+	_lastError = avformat_alloc_output_context2(&ofc, nullptr, nullptr, filePath.c_str());
 
 	auto vc = avcodec_find_encoder(ofc->oformat->video_codec);
 	auto vcc = avcodec_alloc_context3(vc);
@@ -180,7 +181,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
 		_lastErrorString = QString::fromLocal8Bit(buf);
 	}
-	_lastError = avio_open(&ofc->pb, muxEntry->filePath, AVIO_FLAG_WRITE);
+	_lastError = avio_open(&ofc->pb, filePath.c_str(), AVIO_FLAG_WRITE);
 	_lastError = avformat_write_header(ofc, nullptr);
 
 	auto packet = getPacket();
