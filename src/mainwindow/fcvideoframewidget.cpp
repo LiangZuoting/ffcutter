@@ -36,7 +36,7 @@ void FCVideoFrameWidget::setFrame(AVFrame* frame)
 {
 	_frame = frame;
 	ui.ptsLabel->setText(QString::number(_service->timestampToSecond(_streamIndex, frame->pts)));
-	_service->scaleAsync(frame, frame->width / 4, frame->height / 4);
+	_service->scaleAsync(frame, AV_PIX_FMT_RGB24, frame->width / 4, frame->height / 4);
 }
 
 void FCVideoFrameWidget::onScaleFinished(QPixmap pixmap)

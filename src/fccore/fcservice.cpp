@@ -4,12 +4,17 @@
 extern "C"
 {
 #include <libavcodec/avcodec.h>
+#include <libavutil/imgutils.h>
 }
 
 FCService::FCService()
 {
 	qRegisterMetaType<QList<AVStream*>>();
 	qRegisterMetaType<QList<AVFrame*>>();
+
+	_threadPool = new QThreadPool(this);
+	_threadPool->setExpiryTimeout(-1);
+	_threadPool->setMaxThreadCount(1);
 }
 
 FCService::~FCService()
@@ -20,8 +25,7 @@ FCService::~FCService()
 void FCService::openFileAsync(const QString& filePath)
 {
 	QMutexLocker _(&_mutex);
-	auto t = getThreadPool(DEMUX_INDEX);
-	QtConcurrent::run(t, [&, filePath]() {
+	QtConcurrent::run(_threadPool, [&, filePath]() {
 		QMutexLocker _(&_mutex);
 		QTime time;
 		time.start();
@@ -57,8 +61,7 @@ void FCService::openFileAsync(const QString& filePath)
 void FCService::decodeOnePacketAsync(int streamIndex)
 {
 	QMutexLocker _(&_mutex);
-	auto t = getThreadPool(streamIndex);
-	QtConcurrent::run(t, [=]() {
+	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
 		auto frames = decodeNextPacket(streamIndex);
 		emit frameDeocded(frames);
@@ -69,8 +72,7 @@ void FCService::decodeOnePacketAsync(int streamIndex)
 void FCService::decodePacketsAsync(int streamIndex, int count)
 {
 	QMutexLocker _(&_mutex);
-	auto t = getThreadPool(streamIndex);
-	QtConcurrent::run(t, [=]() {
+	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
 		for (int i = 0; i < count;)
 		{
@@ -111,32 +113,34 @@ QList<AVStream*> FCService::streams() const
 
 void FCService::seekAsync(int streamIndex, double timestampInSecond)
 {
-	auto stream = _mapFromIndexToStream[streamIndex];
-	int64_t timestamp = timestampInSecond * (stream->time_base.den / stream->time_base.num);
-	av_seek_frame(_formatContext, streamIndex, timestamp, AVSEEK_FLAG_BACKWARD);
-	avcodec_flush_buffers(getCodecContext(streamIndex));
+	QMutexLocker _(&_mutex);
+	QtConcurrent::run(_threadPool, [=]() {
+		QMutexLocker _(&_mutex);
+		auto stream = _mapFromIndexToStream[streamIndex];
+		int64_t timestamp = timestampInSecond * (stream->time_base.den / stream->time_base.num);
+		if (!seek(streamIndex, timestamp))
+		{
+			emit errorOcurred();
+		}
+		else
+		{
+			emit seekFinished();
+		}
+		});
 }
 
-void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight)
+void FCService::scaleAsync(AVFrame *frame, AVPixelFormat destFormat, int destWidth, int destHeight)
 {
 	QtConcurrent::run([=]() {
 		QMutexLocker _(&_scaleMutex);
-		auto scaler = getScaler(frame, destWidth, destHeight, AV_PIX_FMT_RGB24);
-		if (!scaler)
-		{
-			emit scaleFinished(QPixmap());
-			return;
-		}
-		auto [data, lineSizes] = scaler->scale(frame->data, frame->linesize);
-		if (!data)
-		{
-			emit scaleFinished(QPixmap());
-			return;
-		}
 		QImage image(destWidth, destHeight, QImage::Format_RGB888);
-		for (int i = 0; i < destHeight; ++i)
+		auto scaleResult = scale(frame, destFormat, destWidth, destHeight);
+		if (scaleResult.first)
 		{
-			memcpy(image.scanLine(i), data[0] + i * lineSizes[0], destWidth * (image.depth() / 8));
+			for (int i = 0; i < destHeight; ++i)
+			{
+				memcpy(image.scanLine(i), scaleResult.first[0] + i * scaleResult.second[0], destWidth * (image.depth() / 8));
+			}
 		}
 		emit scaleFinished(QPixmap::fromImage(image));
 		});
@@ -145,6 +149,9 @@ void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight)
 void FCService::saveAsync(const FCMuxEntry &entry)
 {
 	FCMuxEntry *muxEntry = new FCMuxEntry(entry);
+
+	seek(muxEntry->vStreamIndex, muxEntry->startPts);
+
 	auto stream = _mapFromIndexToStream[muxEntry->vStreamIndex];
 
 	AVFormatContext *ofc = nullptr;
@@ -155,10 +162,14 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 	vcc->time_base = stream->time_base;
 	vcc->width = muxEntry->width;
 	vcc->height = muxEntry->height;
-	vcc->pix_fmt = AV_PIX_FMT_GRAY8;
-	vcc->bit_rate = 400000;
+	vcc->pix_fmt = AV_PIX_FMT_RGB8;
 	vcc->framerate = stream->avg_frame_rate;
-	auto vs = avformat_new_stream(ofc, nullptr);
+	vcc->sample_aspect_ratio = { 64, 64 };
+	if (ofc->oformat->flags & AVFMT_GLOBALHEADER)
+	{
+		vcc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+	}
+	auto vs = avformat_new_stream(ofc, vc);
 	vs->time_base = vcc->time_base;
 	vs->avg_frame_rate = stream->avg_frame_rate;
 	vs->r_frame_rate = vs->avg_frame_rate;
@@ -172,8 +183,6 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 	_lastError = avio_open(&ofc->pb, muxEntry->filePath, AVIO_FLAG_WRITE);
 	_lastError = avformat_write_header(ofc, nullptr);
 
-// 	_lastError = av_seek_frame(_formatContext, muxEntry->vStreamIndex, muxEntry->startPts, AVSEEK_FLAG_BACKWARD);
-// 	avcodec_flush_buffers(getCodecContext(muxEntry->vStreamIndex));
 	auto packet = getPacket();
 	int count = muxEntry->duration;
 	if (muxEntry->durationUnit == DURATION_SECOND)
@@ -181,12 +190,20 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		count = INT_MAX;
 	}
 	auto outPacket = av_packet_alloc();
-	while (count--)
+	AVFrame *scaledFrame = av_frame_alloc();
+	scaledFrame->width = muxEntry->width;
+	scaledFrame->height = muxEntry->height;
+	scaledFrame->format = AV_PIX_FMT_RGB8;
+	int scaledBytes = av_image_get_buffer_size((AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
+	uint8_t *scaledData = (uint8_t *)av_malloc(scaledBytes);
+	av_image_fill_arrays(scaledFrame->data, scaledFrame->linesize, scaledData, (AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
+
+	while (count > 0)
 	{
 		auto frames = decodeNextPacket(muxEntry->vStreamIndex);
 		if (frames.isEmpty())
 		{
-			break;
+			continue;
 		}
 		for (auto frame : frames)
 		{
@@ -194,12 +211,22 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			{
 				continue;
 			}
-			if (muxEntry->durationUnit == DURATION_SECOND && frame->pts > (muxEntry->startPts + muxEntry->duration * (stream->time_base.num / stream->time_base.den)))
+			if (muxEntry->durationUnit == DURATION_SECOND && frame->pts > (muxEntry->startPts + muxEntry->duration * (stream->time_base.den / stream->time_base.num)))
 			{
+				count = 0;
 				break;
 			}
 
-			_lastError = avcodec_send_frame(vcc, frame);
+			if (frame->width != muxEntry->width || frame->height != muxEntry->height)
+			{
+				scaledFrame->pts = frame->pts;
+				auto scaleResult = scale(frame, AV_PIX_FMT_RGB8, muxEntry->width, muxEntry->height, scaledFrame->data, scaledFrame->linesize);
+				_lastError = avcodec_send_frame(vcc, scaledFrame);
+			}
+			else
+			{
+				_lastError = avcodec_send_frame(vcc, frame);
+			}
 			if (_lastError < 0)
 			{
 				break;
@@ -222,6 +249,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 				}
 				av_packet_rescale_ts(outPacket, vcc->time_base, vs->time_base);
 				_lastError = av_interleaved_write_frame(ofc, outPacket);
+				--count;
 				if (_lastError < 0)
 				{
 					{
@@ -259,30 +287,27 @@ void FCService::destroy()
 {
 	{
 		QMutexLocker _(&_mutex);
-		if (_formatContext)
-		{
-			avformat_close_input(&_formatContext);
-			_mapFromIndexToStream.clear();
-		}
 		if (auto codecs = _mapFromIndexToCodec.values(); !codecs.isEmpty())
 		{
-			for (auto c : codecs)
+			for (auto &c : codecs)
 			{
 				avcodec_free_context(&c);
 			}
 			_mapFromIndexToCodec.clear();
 		}
+		if (_formatContext)
+		{
+			avformat_close_input(&_formatContext);
+			_mapFromIndexToStream.clear();
+		}
 		if (_readPacket)
 		{
 			av_packet_free(&_readPacket);
 		}
-		if (auto threads = _mapFromIndexToThread.values(); !threads.isEmpty())
+		if (_threadPool)
 		{
-			for (auto t : threads)
-			{
-				delete t;
-			}
-			_mapFromIndexToThread.clear();
+			delete _threadPool;
+			_threadPool = nullptr;
 		}
 	}
 	
@@ -290,6 +315,40 @@ void FCService::destroy()
 		QMutexLocker _(&_scaleMutex);
 		_vecScaler.clear();
 	}
+}
+
+bool FCService::seek(int streamIndex, int64_t timestamp)
+{
+	_lastError = av_seek_frame(_formatContext, streamIndex, timestamp, AVSEEK_FLAG_BACKWARD);
+	if (_lastError < 0)
+	{
+		return false;
+	}
+	auto codecContext = getCodecContext(streamIndex);
+	if (codecContext)
+	{
+		avcodec_flush_buffers(codecContext);
+	}
+	return true;
+}
+
+FCScaler::ScaleResult FCService::scale(AVFrame *frame, AVPixelFormat destFormat, int destWidth, int destHeight, uint8_t *scaledData[4], int scaledLineSizes[4])
+{
+	FCScaler::ScaleResult result = { nullptr, nullptr };
+	do 
+	{
+		auto scaler = getScaler(frame, destWidth, destHeight, destFormat);
+		if (!scaler)
+		{
+			break;
+		}
+		result = scaler->scale(frame->data, frame->linesize, scaledData, scaledLineSizes);
+		if (!result.first)
+		{
+			break;
+		}
+	} while (0);
+	return result;
 }
 
 QList<AVFrame*> FCService::decodeNextPacket(int streamIndex)
@@ -341,31 +400,15 @@ QList<AVFrame*> FCService::decodeNextPacket(int streamIndex)
 	return frames;
 }
 
-QThreadPool* FCService::getThreadPool(int streamIndex)
-{
-	if (auto iter = _mapFromIndexToThread.constFind(streamIndex); iter != _mapFromIndexToThread.cend())
-	{
-		return iter.value();
-	}
-	else
-	{
-		QThreadPool* t = new QThreadPool();
-		t->setExpiryTimeout(-1);
-		t->setMaxThreadCount(1);
-		_mapFromIndexToThread.insert(streamIndex, t);
-		return t;
-	}
-}
-
 AVCodecContext* FCService::getCodecContext(int streamIndex)
 {
 	if (auto iter = _mapFromIndexToCodec.constFind(streamIndex); iter != _mapFromIndexToCodec.cend())
 	{
 		return iter.value();
 	}
-	else
+	else if (auto iter = _mapFromIndexToStream.constFind(streamIndex); iter != _mapFromIndexToStream.cend())
 	{
-		auto stream = _mapFromIndexToStream[streamIndex];
+		auto stream = iter.value();
 		AVCodec* codec = avcodec_find_decoder(stream->codecpar->codec_id);
 		AVCodecContext* codecContext = avcodec_alloc_context3(codec);
 		_lastError = avcodec_parameters_to_context(codecContext, stream->codecpar);
@@ -384,6 +427,7 @@ AVCodecContext* FCService::getCodecContext(int streamIndex)
 		_mapFromIndexToCodec.insert(streamIndex, codecContext);
 		return codecContext;
 	}
+	return nullptr;
 }
 
 AVPacket* FCService::getPacket()

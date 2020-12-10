@@ -42,7 +42,7 @@ public:
 
     void seekAsync(int streamIndex, double timestampInSecond);
 
-    void scaleAsync(AVFrame* frame, int destWidth, int destHeight);
+    void scaleAsync(AVFrame* frame, AVPixelFormat destFormat, int destWidth, int destHeight);
 
     void saveAsync(const FCMuxEntry& entry);
 
@@ -61,8 +61,9 @@ Q_SIGNALS:
     void seekFinished();
 
 private:
-    inline QList<AVFrame*> decodeNextPacket(int streamIndex);
-    QThreadPool* getThreadPool(int streamIndex);
+    bool seek(int streamIndex, int64_t timestamp);
+    FCScaler::ScaleResult scale(AVFrame *frame, AVPixelFormat destFormat, int destWidth, int destHeight, uint8_t *scaledData[4] = nullptr, int scaledLineSizes[4] = nullptr);
+    QList<AVFrame*> decodeNextPacket(int streamIndex);
     AVCodecContext* getCodecContext(int streamIndex);
     AVPacket* getPacket();
     QSharedPointer<FCScaler> getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat);
@@ -70,11 +71,7 @@ private:
     QMutex _mutex;
     int _lastError = 0;
     QString _lastErrorString;
-    /// <summary>
-	/// map from stream index to thread pool
-	/// key = -1 for demuxing thread
-    /// </summary>
-    QMap<int, QThreadPool*> _mapFromIndexToThread;
+    QThreadPool *_threadPool = nullptr;
     AVFormatContext* _formatContext = nullptr;
     /// <summary>
     /// map from stream index to codec context

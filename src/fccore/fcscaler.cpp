@@ -6,8 +6,11 @@ extern "C"
 
 int FCScaler::create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int destWidth, int destHeight, AVPixelFormat destFormat)
 {
-	_swsContext = sws_getContext(srcWidth, srcHeight, srcFormat, destWidth, destHeight, destFormat, SWS_BILINEAR, nullptr, nullptr, nullptr);
-	int ret = av_image_alloc(_scaledImageData, _scaledImageLineSizes, destWidth, destHeight, destFormat, 1);
+	_swsContext = sws_getContext(srcWidth, srcHeight, srcFormat, destWidth, destHeight, destFormat, SWS_BICUBIC, nullptr, nullptr, nullptr);
+	//int ret = av_image_alloc(_scaledImageData, _scaledImageLineSizes, destWidth, destHeight, AV_PIX_FMT_PAL8, 1);
+	int bytes = av_image_get_buffer_size(destFormat, destWidth, destHeight, 1);
+	uint8_t *data = (uint8_t *)av_malloc(bytes);
+	int ret = av_image_fill_arrays(_scaledImageData, _scaledImageLineSizes, data, destFormat, destWidth, destHeight, 1);
 	if (ret < 0)
 	{
 		sws_freeContext(_swsContext);
@@ -28,14 +31,22 @@ FCScaler::~FCScaler()
 	destroy();
 }
 
-QPair<const uint8_t *const *, const int *> FCScaler::scale(const uint8_t *const *srcSlice, const int *srcStride)
+FCScaler::ScaleResult FCScaler::scale(const uint8_t *const *srcSlice, const int *srcStride, uint8_t *scaledData[4], int scaledLineSizes[4])
 {
-	int ret = sws_scale(_swsContext, srcSlice, srcStride, 0, _srcHeight, _scaledImageData, _scaledImageLineSizes);
+	if (!scaledData)
+	{
+		scaledData = _scaledImageData;
+	}
+	if (!scaledLineSizes)
+	{
+		scaledLineSizes = _scaledImageLineSizes;
+	}
+	int ret = sws_scale(_swsContext, srcSlice, srcStride, 0, _srcHeight, scaledData, scaledLineSizes);
 	if (ret <= 0)
 	{
 		return { nullptr, nullptr };
 	}
-	return { _scaledImageData, _scaledImageLineSizes };
+	return { scaledData, scaledLineSizes };
 }
 
 bool FCScaler::equal(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int destWidth, int destHeight, AVPixelFormat destFormat)

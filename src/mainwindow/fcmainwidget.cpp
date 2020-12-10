@@ -75,10 +75,11 @@ void FCMainWidget::onGifClicked()
 	{
 		FCMuxEntry entry;
 		entry.filePath = "d:\\1.gif";
-		entry.width = stream->codecpar->width;
-		entry.height = stream->codecpar->height;
-		entry.duration = 90;
-		entry.durationUnit = DURATION_FRAME_COUNT;
+		entry.width = stream->codecpar->width / 2;
+		entry.height = stream->codecpar->height / 2;
+		entry.startPts = 10 * 60 * 1000;
+		entry.duration = 3;
+		entry.durationUnit = DURATION_SECOND;
 		entry.vStreamIndex = _streamIndex;
 		_service->saveAsync(entry);
 	}
