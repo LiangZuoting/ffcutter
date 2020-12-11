@@ -114,9 +114,9 @@
        </layout>
       </item>
       <item>
-       <widget class="QPushButton" name="gifBtn">
+       <widget class="QPushButton" name="saveBtn">
         <property name="text">
-         <string>保存GIF</string>
+         <string>保存</string>
         </property>
        </widget>
       </item>

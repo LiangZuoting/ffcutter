@@ -21,9 +21,10 @@ public:
 	void setStreamIndex(int streamIndex);
 	void setService(const QSharedPointer<FCService>& service);
 
-	void decodeOnce();
-
 	int64_t selectedPts() const;
+
+public Q_SLOTS:
+	void decodeOnce();
 
 private Q_SLOTS:
 	void onFrameDecoded(QList<AVFrame*> frames);

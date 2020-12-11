@@ -5,6 +5,8 @@ FCVideoTimelineWidget::FCVideoTimelineWidget(QWidget *parent)
 	: QWidget(parent)
 {
 	ui.setupUi(this);
+
+	connect(ui.forwardBtn, SIGNAL(clicked()), this, SLOT(decodeOnce()));
 }
 
 FCVideoTimelineWidget::~FCVideoTimelineWidget()

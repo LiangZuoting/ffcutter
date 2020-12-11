@@ -14,11 +14,13 @@
     <ClInclude Include="..\src\fccore\fccore_global.h" />
     <ClInclude Include="..\src\fccore\fcscaler.h" />
     <ClInclude Include="..\src\fccore\fcmuxentry.h" />
+    <ClInclude Include="..\src\fccore\fcutil.h" />
     <QtMoc Include="..\src\fccore\fcservice.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\fccore\fcscaler.cpp" />
     <ClCompile Include="..\src\fccore\fcservice.cpp" />
+    <ClCompile Include="..\src\fccore\fcutil.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CDF96F2C-B0D2-4D27-B22E-49C321B8110D}</ProjectGuid>

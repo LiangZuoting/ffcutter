@@ -29,12 +29,18 @@
     <ClInclude Include="..\src\fccore\fcmuxentry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\fccore\fcutil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\fccore\fcservice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\fccore\fcscaler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\fccore\fcutil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

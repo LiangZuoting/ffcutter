@@ -1,4 +1,5 @@
 #include "fcscaler.h"
+#include "fcutil.h"
 extern "C"
 {
 #include <libavutil/imgutils.h>
@@ -7,12 +8,12 @@ extern "C"
 int FCScaler::create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int destWidth, int destHeight, AVPixelFormat destFormat)
 {
 	_swsContext = sws_getContext(srcWidth, srcHeight, srcFormat, destWidth, destHeight, destFormat, SWS_BICUBIC, nullptr, nullptr, nullptr);
-	//int ret = av_image_alloc(_scaledImageData, _scaledImageLineSizes, destWidth, destHeight, AV_PIX_FMT_PAL8, 1);
 	int bytes = av_image_get_buffer_size(destFormat, destWidth, destHeight, 1);
 	uint8_t *data = (uint8_t *)av_malloc(bytes);
 	int ret = av_image_fill_arrays(_scaledImageData, _scaledImageLineSizes, data, destFormat, destWidth, destHeight, 1);
 	if (ret < 0)
 	{
+		FCUtil::printAVError(ret, __LINE__, "av_image_fill_arrays error");
 		sws_freeContext(_swsContext);
 		_swsContext = nullptr;
 		return ret;
@@ -44,6 +45,7 @@ FCScaler::ScaleResult FCScaler::scale(const uint8_t *const *srcSlice, const int 
 	int ret = sws_scale(_swsContext, srcSlice, srcStride, 0, _srcHeight, scaledData, scaledLineSizes);
 	if (ret <= 0)
 	{
+		FCUtil::printAVError(ret, __LINE__, "sws_scale error");
 		return { nullptr, nullptr };
 	}
 	return { scaledData, scaledLineSizes };

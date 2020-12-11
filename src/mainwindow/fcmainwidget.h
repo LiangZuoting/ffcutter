@@ -24,7 +24,7 @@ private Q_SLOTS:
 	void onStreamItemSelected(int streamIndex);
 	void onFastSeekClicked();
 	void onSetStartClicked();
-	void onGifClicked();
+	void onSaveClicked();
 
 private:
 	Ui::FCMainWidget ui;

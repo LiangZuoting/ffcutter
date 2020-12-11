@@ -1,10 +1,12 @@
 #include "fcservice.h"
 #include <QtConcurrent>
 #include <QImage>
+#include "fcutil.h"
 extern "C"
 {
 #include <libavcodec/avcodec.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/opt.h>
 }
 
 FCService::FCService()
@@ -35,11 +37,13 @@ void FCService::openFileAsync(const QString& filePath)
 			_lastError = avformat_open_input(&_formatContext, url.data(), nullptr, nullptr);
 			if (_lastError < 0)
 			{
+				FCUtil::printAVError(_lastError, __LINE__, "open file error");
 				break;
 			}
 			_lastError = avformat_find_stream_info(_formatContext, nullptr);
 			if (_lastError < 0)
 			{
+				FCUtil::printAVError(_lastError, __LINE__, "open file error");
 				break;
 			}
 			for (unsigned i = 0; i < _formatContext->nb_streams; ++i)
@@ -160,17 +164,28 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 
 	auto vc = avcodec_find_encoder(ofc->oformat->video_codec);
 	auto vcc = avcodec_alloc_context3(vc);
+	if (vc->id == AV_CODEC_ID_H264)
+	{
+		av_opt_set(vcc->priv_data, "preset", "slow", 0);
+	}
+	vcc->bit_rate = stream->codecpar->bit_rate;
 	vcc->time_base = stream->time_base;
 	vcc->width = muxEntry->width;
 	vcc->height = muxEntry->height;
-	vcc->pix_fmt = AV_PIX_FMT_RGB8;
+	if (!vc->pix_fmts[0] != AV_PIX_FMT_NONE)
+	{
+		vcc->pix_fmt = vc->pix_fmts[0];
+	}
 	vcc->framerate = stream->avg_frame_rate;
 	vcc->sample_aspect_ratio = { 64, 64 };
-	if (ofc->oformat->flags & AVFMT_GLOBALHEADER)
+	// H264 codec 不能 set 这个 flag，否则文件不能解析；
+	// gif 必须 set 这个 flag，否则图像效果不对。
+	if (ofc->oformat->flags & AVFMT_GLOBALHEADER && vcc->codec_id != AV_CODEC_ID_H264)
 	{
 		vcc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 	}
 	auto vs = avformat_new_stream(ofc, vc);
+	vs->id = ofc->nb_streams - 1;
 	vs->time_base = vcc->time_base;
 	vs->avg_frame_rate = stream->avg_frame_rate;
 	vs->r_frame_rate = vs->avg_frame_rate;
@@ -194,14 +209,19 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 	AVFrame *scaledFrame = av_frame_alloc();
 	scaledFrame->width = muxEntry->width;
 	scaledFrame->height = muxEntry->height;
-	scaledFrame->format = AV_PIX_FMT_RGB8;
+	scaledFrame->format = vcc->pix_fmt;
 	int scaledBytes = av_image_get_buffer_size((AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
 	uint8_t *scaledData = (uint8_t *)av_malloc(scaledBytes);
 	av_image_fill_arrays(scaledFrame->data, scaledFrame->linesize, scaledData, (AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
+	av_frame_make_writable(scaledFrame);
 
 	while (count > 0)
 	{
 		auto frames = decodeNextPacket(muxEntry->vStreamIndex);
+		if (_lastError < 0)
+		{
+			break;
+		}
 		if (frames.isEmpty())
 		{
 			continue;
@@ -221,7 +241,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			if (frame->width != muxEntry->width || frame->height != muxEntry->height)
 			{
 				scaledFrame->pts = frame->pts;
-				auto scaleResult = scale(frame, AV_PIX_FMT_RGB8, muxEntry->width, muxEntry->height, scaledFrame->data, scaledFrame->linesize);
+				auto scaleResult = scale(frame, vcc->pix_fmt, muxEntry->width, muxEntry->height, scaledFrame->data, scaledFrame->linesize);
 				_lastError = avcodec_send_frame(vcc, scaledFrame);
 			}
 			else
@@ -230,6 +250,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			}
 			if (_lastError < 0)
 			{
+				FCUtil::printAVError(_lastError, __LINE__, "send frame error");
 				break;
 			}
 			while (_lastError >= 0)
@@ -242,23 +263,15 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 				}
 				if (_lastError < 0)
 				{
-					{
-						char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-						av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
-						_lastErrorString = QString::fromLocal8Bit(buf);
-					}
+					FCUtil::printAVError(_lastError, __LINE__, "recv packet error");
+					break;
 				}
 				av_packet_rescale_ts(outPacket, vcc->time_base, vs->time_base);
 				_lastError = av_interleaved_write_frame(ofc, outPacket);
 				--count;
 				if (_lastError < 0)
 				{
-					{
-						char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-						av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
-						_lastErrorString = QString::fromLocal8Bit(buf);
-					}
-					assert(0);
+					FCUtil::printAVError(_lastError, __LINE__, "write frame error");
 				}
 			}
 		}
@@ -323,6 +336,7 @@ bool FCService::seek(int streamIndex, int64_t timestamp)
 	_lastError = av_seek_frame(_formatContext, streamIndex, timestamp, AVSEEK_FLAG_BACKWARD);
 	if (_lastError < 0)
 	{
+		FCUtil::printAVError(_lastError, __LINE__, "seek error, stream:", streamIndex, ",ts:", timestamp);
 		return false;
 	}
 	auto codecContext = getCodecContext(streamIndex);
@@ -366,8 +380,14 @@ QList<AVFrame*> FCService::decodeNextPacket(int streamIndex)
 	while (!_lastError)
 	{
 		_lastError = av_read_frame(_formatContext, packet);
+		if (_lastError == AVERROR(EAGAIN) || _lastError == AVERROR_EOF)
+		{
+			_lastError = 0;
+			return frames;
+		}
 		if (_lastError < 0)
 		{
+			FCUtil::printAVError(_lastError, __LINE__, "read frame error");
 			break;
 		}
 		if (packet->stream_index != streamIndex)
@@ -377,6 +397,7 @@ QList<AVFrame*> FCService::decodeNextPacket(int streamIndex)
 		_lastError = avcodec_send_packet(codecContext, packet);
 		if (_lastError < 0)
 		{
+			FCUtil::printAVError(_lastError, __LINE__, "send packet error");
 			break;
 		}
 		while (_lastError >= 0)
@@ -395,6 +416,7 @@ QList<AVFrame*> FCService::decodeNextPacket(int streamIndex)
 				_lastError = 0;
 				return frames;
 			}
+			FCUtil::printAVError(_lastError, __LINE__, "recv frame error");
 			break;
 		}
 	}
@@ -415,6 +437,7 @@ AVCodecContext* FCService::getCodecContext(int streamIndex)
 		_lastError = avcodec_parameters_to_context(codecContext, stream->codecpar);
 		if (_lastError < 0)
 		{
+			FCUtil::printAVError(_lastError, __LINE__, "avcodec_parameters_to_context error");
 			avcodec_free_context(&codecContext);
 			return nullptr;
 		}
@@ -422,6 +445,7 @@ AVCodecContext* FCService::getCodecContext(int streamIndex)
 		_lastError = avcodec_open2(codecContext, codec, &opts);
 		if (_lastError < 0)
 		{
+			FCUtil::printAVError(_lastError, __LINE__, "avcodec_open2 error");
 			avcodec_free_context(&codecContext);
 			return nullptr;
 		}
