@@ -25,11 +25,10 @@ public:
 	AVFrame* frame() const;
 
 protected:
-	void mousePressEvent(QMouseEvent* event) override;
-	void mouseReleaseEvent(QMouseEvent* event) override;
+	void mouseDoubleClickEvent(QMouseEvent* event);
 
 Q_SIGNALS:
-	void clicked();
+	void doubleClicked();
 
 private Q_SLOTS:
 	void onScaleFinished(QPixmap pixmap);
@@ -39,5 +38,4 @@ private:
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;
 	AVFrame* _frame = nullptr;
-	bool _pressed = false;
 };

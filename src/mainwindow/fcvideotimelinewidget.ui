@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1042</width>
-    <height>150</height>
+    <height>260</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>0</width>
-    <height>150</height>
+    <height>260</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>16777215</width>
-    <height>150</height>
+    <height>260</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -44,19 +44,6 @@
    <property name="bottomMargin">
     <number>0</number>
    </property>
-   <item>
-    <widget class="QToolButton" name="backwardBtn">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="text">
-      <string>&lt;</string>
-     </property>
-    </widget>
-   </item>
    <item>
     <widget class="QScrollArea" name="scrollArea">
      <property name="sizePolicy">
@@ -94,8 +81,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>966</width>
-        <height>130</height>
+        <width>997</width>
+        <height>238</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -107,13 +94,13 @@
       <property name="minimumSize">
        <size>
         <width>0</width>
-        <height>130</height>
+        <height>238</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
         <width>16777215</width>
-        <height>130</height>
+        <height>238</height>
        </size>
       </property>
       <layout class="QHBoxLayout" name="timelineLayout">

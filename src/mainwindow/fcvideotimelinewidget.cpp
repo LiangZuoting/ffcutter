@@ -51,7 +51,7 @@ void FCVideoTimelineWidget::onFrameDecoded(QList<AVFrame*> frames)
 		for (auto frame : frames)
 		{
 			FCVideoFrameWidget* widget = new FCVideoFrameWidget(this);
-			connect(widget, SIGNAL(clicked()), SLOT(onVideoFrameClicked()));
+			connect(widget, SIGNAL(doubleClicked()), SLOT(onVideoFrameClicked()));
 			ui.timelineLayout->addWidget(widget);
 			widget->setService(_service);
 			widget->setStreamIndex(_streamIndex);
@@ -69,6 +69,7 @@ void FCVideoTimelineWidget::onVideoFrameClicked()
 {
 	auto widget = qobject_cast<FCVideoFrameWidget*>(sender());
 	_selected = widget;
+	emit selectionChanged();
 
 	if (auto children = findChildren<FCVideoFrameWidget*>(); !children.isEmpty())
 	{

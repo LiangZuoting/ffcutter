@@ -169,10 +169,10 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		av_opt_set(vcc->priv_data, "preset", "slow", 0);
 	}
 	vcc->bit_rate = stream->codecpar->bit_rate;
-	vcc->time_base = stream->time_base;
+	vcc->time_base = { 1, stream->avg_frame_rate.num / stream->avg_frame_rate.den };
 	vcc->width = muxEntry->width;
 	vcc->height = muxEntry->height;
-	if (!vc->pix_fmts[0] != AV_PIX_FMT_NONE)
+	if (vc->pix_fmts[0] != AV_PIX_FMT_NONE)
 	{
 		vcc->pix_fmt = vc->pix_fmts[0];
 	}
@@ -214,7 +214,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 	uint8_t *scaledData = (uint8_t *)av_malloc(scaledBytes);
 	av_image_fill_arrays(scaledFrame->data, scaledFrame->linesize, scaledData, (AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
 	av_frame_make_writable(scaledFrame);
-
+	int64_t pts = 0;
 	while (count > 0)
 	{
 		auto frames = decodeNextPacket(muxEntry->vStreamIndex);
@@ -238,16 +238,10 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 				break;
 			}
 
-			if (frame->width != muxEntry->width || frame->height != muxEntry->height)
-			{
-				scaledFrame->pts = frame->pts;
-				auto scaleResult = scale(frame, vcc->pix_fmt, muxEntry->width, muxEntry->height, scaledFrame->data, scaledFrame->linesize);
-				_lastError = avcodec_send_frame(vcc, scaledFrame);
-			}
-			else
-			{
-				_lastError = avcodec_send_frame(vcc, frame);
-			}
+			scaledFrame->pts = pts++;
+			auto scaleResult = scale(frame, vcc->pix_fmt, muxEntry->width, muxEntry->height, scaledFrame->data, scaledFrame->linesize);
+			_lastError = avcodec_send_frame(vcc, scaledFrame);
+
 			if (_lastError < 0)
 			{
 				FCUtil::printAVError(_lastError, __LINE__, "send frame error");

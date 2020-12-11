@@ -49,21 +49,11 @@ AVFrame* FCVideoFrameWidget::frame() const
 	return _frame;
 }
 
-void FCVideoFrameWidget::mousePressEvent(QMouseEvent* event)
+void FCVideoFrameWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
-	_pressed = true;
-	QWidget::mousePressEvent(event);
-}
-
-void FCVideoFrameWidget::mouseReleaseEvent(QMouseEvent* event)
-{
-	if (_pressed)
-	{
-		_pressed = false;
-		setSelection(true);
-		emit clicked();
-	}
-	QWidget::mouseReleaseEvent(event);
+	setSelection(true);
+	emit doubleClicked();
+	QWidget::mouseDoubleClickEvent(event);
 }
 
 void FCVideoFrameWidget::onScaleFinished(QPixmap pixmap)

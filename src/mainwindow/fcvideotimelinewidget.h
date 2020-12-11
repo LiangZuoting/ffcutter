@@ -31,6 +31,9 @@ private Q_SLOTS:
 	void onDecodeFinished();
 	void onVideoFrameClicked();
 
+Q_SIGNALS:
+	void selectionChanged();
+
 private:
 	void clear();
 

@@ -12,7 +12,6 @@ FCMainWidget::FCMainWidget(QWidget *parent)
 
 	connect(ui.fiWidget, SIGNAL(streamItemSelected(int)), this, SLOT(onStreamItemSelected(int)));
 	connect(ui.fastSeekBtn, SIGNAL(clicked()), this, SLOT(onFastSeekClicked()));
-	connect(ui.setStartBtn, SIGNAL(clicked()), this, SLOT(onSetStartClicked()));
 	connect(ui.saveBtn, SIGNAL(clicked()), this, SLOT(onSaveClicked()));
 
 	ui.durationUnitComboBox->addItems({ u8"ึก", u8"ร๋" });
@@ -44,7 +43,11 @@ void FCMainWidget::onStreamItemSelected(int streamIndex)
 	auto stream = _service->stream(streamIndex);
 	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
 	{
+		ui.widthEdit->setText(QString::number(stream->codecpar->width));
+		ui.heightEdit->setText(QString::number(stream->codecpar->height));
+
 		FCVideoTimelineWidget* widget = new FCVideoTimelineWidget(this);
+		connect(widget, SIGNAL(selectionChanged()), this, SLOT(onVideoFrameSelectionChanged()));
 		ui.layout->addWidget(widget);
 		widget->setStreamIndex(streamIndex);
 		widget->setService(_service);
@@ -72,19 +75,6 @@ void FCMainWidget::onFastSeekClicked()
 	}
 }
 
-void FCMainWidget::onSetStartClicked()
-{
-	auto stream = _service->stream(_streamIndex);
-	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-	{
-		FCVideoTimelineWidget* widget = findChild<FCVideoTimelineWidget*>();
-		if (widget)
-		{
-			_muxEntry.startPts = widget->selectedPts();
-		}
-	}
-}
-
 void FCMainWidget::onSaveClicked()
 {
 	auto stream = _service->stream(_streamIndex);
@@ -94,12 +84,30 @@ void FCMainWidget::onSaveClicked()
 		if (!filePath.isEmpty())
 		{
 			_muxEntry.filePath = filePath;
-			_muxEntry.width = stream->codecpar->width;
-			_muxEntry.height = stream->codecpar->height;
+			_muxEntry.width = ui.widthEdit->text().toInt();
+			if (_muxEntry.width <= 0)
+			{
+				_muxEntry.width = stream->codecpar->width;
+			}
+			_muxEntry.height = ui.heightEdit->text().toInt();
+			if (_muxEntry.height <= 0)
+			{
+				_muxEntry.height = stream->codecpar->height;
+			}
+			_muxEntry.startPts = ui.startPtsEdit->text().toDouble();
 			_muxEntry.duration = ui.durationEdit->text().toDouble();
 			_muxEntry.durationUnit = (FCDurationUnit)ui.durationUnitComboBox->currentIndex();
 			_muxEntry.vStreamIndex = _streamIndex;
 			_service->saveAsync(_muxEntry);
 		}
+	}
+}
+
+void FCMainWidget::onVideoFrameSelectionChanged()
+{
+	auto widget = qobject_cast<FCVideoTimelineWidget*>(sender());
+	if (widget)
+	{
+		ui.startPtsEdit->setText(QString::number(widget->selectedPts()));
 	}
 }
