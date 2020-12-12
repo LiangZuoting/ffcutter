@@ -59,11 +59,12 @@ Q_SIGNALS:
     void decodeFinished();
     void scaleFinished(QPixmap);
     void seekFinished();
+    void saveFinished();
 
 private:
     bool seek(int streamIndex, int64_t timestamp);
     FCScaler::ScaleResult scale(AVFrame *frame, AVPixelFormat destFormat, int destWidth, int destHeight, uint8_t *scaledData[4] = nullptr, int scaledLineSizes[4] = nullptr);
-    QList<AVFrame*> decodeNextPacket(int streamIndex);
+    QList<AVFrame *> decodeNextPacket(const QVector<int> &streamFilter);
     AVCodecContext* getCodecContext(int streamIndex);
     AVPacket* getPacket();
     QSharedPointer<FCScaler> getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat);

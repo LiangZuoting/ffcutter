@@ -12,12 +12,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\fccore\fccore_global.h" />
+    <ClInclude Include="..\src\fccore\fcmuxer.h" />
     <ClInclude Include="..\src\fccore\fcscaler.h" />
     <ClInclude Include="..\src\fccore\fcmuxentry.h" />
     <ClInclude Include="..\src\fccore\fcutil.h" />
     <QtMoc Include="..\src\fccore\fcservice.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\fccore\fcmuxer.cpp" />
     <ClCompile Include="..\src\fccore\fcscaler.cpp" />
     <ClCompile Include="..\src\fccore\fcservice.cpp" />
     <ClCompile Include="..\src\fccore\fcutil.cpp" />

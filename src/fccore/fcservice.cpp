@@ -67,7 +67,7 @@ void FCService::decodeOnePacketAsync(int streamIndex)
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
-		auto frames = decodeNextPacket(streamIndex);
+		auto frames = decodeNextPacket({ streamIndex });
 		emit frameDeocded(frames);
 		emit decodeFinished();
 		});
@@ -80,7 +80,7 @@ void FCService::decodePacketsAsync(int streamIndex, int count)
 		QMutexLocker _(&_mutex);
 		for (int i = 0; i < count;)
 		{
-			auto frames = decodeNextPacket(streamIndex);
+			auto frames = decodeNextPacket({ streamIndex });
 			if (auto [err, errStr] = lastError(); err)
 			{
 				emit errorOcurred();
@@ -154,127 +154,147 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 {
 	FCMuxEntry *muxEntry = new FCMuxEntry(entry);
 
-	seek(muxEntry->vStreamIndex, muxEntry->startPts);
+	QMutexLocker _(&_mutex);
+	QtConcurrent::run(_threadPool, [&]() {
+		QMutexLocker _(&_mutex);
 
-	auto stream = _mapFromIndexToStream[muxEntry->vStreamIndex];
+		seek(muxEntry->vStreamIndex, muxEntry->startPts);
 
-	AVFormatContext *ofc = nullptr;
-	auto filePath = muxEntry->filePath.toStdString();
-	_lastError = avformat_alloc_output_context2(&ofc, nullptr, nullptr, filePath.c_str());
+		auto stream = _mapFromIndexToStream[muxEntry->vStreamIndex];
 
-	auto vc = avcodec_find_encoder(ofc->oformat->video_codec);
-	auto vcc = avcodec_alloc_context3(vc);
-	if (vc->id == AV_CODEC_ID_H264)
-	{
-		av_opt_set(vcc->priv_data, "preset", "slow", 0);
-	}
-	vcc->bit_rate = stream->codecpar->bit_rate;
-	vcc->time_base = { 1, stream->avg_frame_rate.num / stream->avg_frame_rate.den };
-	vcc->width = muxEntry->width;
-	vcc->height = muxEntry->height;
-	if (vc->pix_fmts[0] != AV_PIX_FMT_NONE)
-	{
-		vcc->pix_fmt = vc->pix_fmts[0];
-	}
-	vcc->framerate = stream->avg_frame_rate;
-	vcc->sample_aspect_ratio = { 64, 64 };
-	// H264 codec 不能 set 这个 flag，否则文件不能解析；
-	// gif 必须 set 这个 flag，否则图像效果不对。
-	if (ofc->oformat->flags & AVFMT_GLOBALHEADER && vcc->codec_id != AV_CODEC_ID_H264)
-	{
-		vcc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-	}
-	auto vs = avformat_new_stream(ofc, vc);
-	vs->id = ofc->nb_streams - 1;
-	vs->time_base = vcc->time_base;
-	vs->avg_frame_rate = stream->avg_frame_rate;
-	vs->r_frame_rate = vs->avg_frame_rate;
-	_lastError = avcodec_parameters_from_context(vs->codecpar, vcc);
-	_lastError = avcodec_open2(vcc, vc, nullptr);
-	{
-		char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
-		av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
-		_lastErrorString = QString::fromLocal8Bit(buf);
-	}
-	_lastError = avio_open(&ofc->pb, filePath.c_str(), AVIO_FLAG_WRITE);
-	_lastError = avformat_write_header(ofc, nullptr);
+		AVFormatContext *ofc = nullptr;
+		auto filePath = muxEntry->filePath.toStdString();
+		_lastError = avformat_alloc_output_context2(&ofc, nullptr, nullptr, filePath.c_str());
 
-	auto packet = getPacket();
-	int count = muxEntry->duration;
-	if (muxEntry->durationUnit == DURATION_SECOND)
-	{
-		count = INT_MAX;
-	}
-	auto outPacket = av_packet_alloc();
-	AVFrame *scaledFrame = av_frame_alloc();
-	scaledFrame->width = muxEntry->width;
-	scaledFrame->height = muxEntry->height;
-	scaledFrame->format = vcc->pix_fmt;
-	int scaledBytes = av_image_get_buffer_size((AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
-	uint8_t *scaledData = (uint8_t *)av_malloc(scaledBytes);
-	av_image_fill_arrays(scaledFrame->data, scaledFrame->linesize, scaledData, (AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
-	av_frame_make_writable(scaledFrame);
-	int64_t pts = 0;
-	while (count > 0)
-	{
-		auto frames = decodeNextPacket(muxEntry->vStreamIndex);
-		if (_lastError < 0)
+		auto vc = avcodec_find_encoder(ofc->oformat->video_codec);
+		auto vcc = avcodec_alloc_context3(vc);
+		if (vc->id == AV_CODEC_ID_H264)
 		{
-			break;
+			av_opt_set(vcc->priv_data, "preset", "slow", 0);
 		}
-		if (frames.isEmpty())
+		vcc->bit_rate = stream->codecpar->bit_rate;
+		vcc->time_base = { 1, stream->avg_frame_rate.num / stream->avg_frame_rate.den };
+		vcc->width = muxEntry->width;
+		vcc->height = muxEntry->height;
+		if (vc->pix_fmts[0] != AV_PIX_FMT_NONE)
 		{
-			continue;
+			vcc->pix_fmt = vc->pix_fmts[0];
 		}
-		for (auto frame : frames)
+		vcc->framerate = stream->avg_frame_rate;
+		vcc->sample_aspect_ratio = { 64, 64 };
+		// H264 codec 不能 set 这个 flag，否则文件不能解析；
+		// gif 必须 set 这个 flag，否则图像效果不对。
+		if (ofc->oformat->flags & AVFMT_GLOBALHEADER && vcc->codec_id != AV_CODEC_ID_H264)
 		{
-			if (frame->pts < muxEntry->startPts)
+			vcc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+		}
+		auto vs = avformat_new_stream(ofc, vc);
+		vs->id = ofc->nb_streams - 1;
+		vs->time_base = vcc->time_base;
+		vs->avg_frame_rate = stream->avg_frame_rate;
+		vs->r_frame_rate = vs->avg_frame_rate;
+		_lastError = avcodec_parameters_from_context(vs->codecpar, vcc);
+		_lastError = avcodec_open2(vcc, vc, nullptr);
+		{
+			char buf[AV_ERROR_MAX_STRING_SIZE] = { 0 };
+			av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, _lastError);
+			_lastErrorString = QString::fromLocal8Bit(buf);
+		}
+		_lastError = avio_open(&ofc->pb, filePath.c_str(), AVIO_FLAG_WRITE);
+		_lastError = avformat_write_header(ofc, nullptr);
+
+		auto packet = getPacket();
+		int count = muxEntry->duration;
+		if (muxEntry->durationUnit == DURATION_SECOND)
+		{
+			count = INT_MAX;
+		}
+		auto outPacket = av_packet_alloc();
+		AVFrame *scaledFrame = av_frame_alloc();
+		scaledFrame->width = muxEntry->width;
+		scaledFrame->height = muxEntry->height;
+		scaledFrame->format = vcc->pix_fmt;
+		int scaledBytes = av_image_get_buffer_size((AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
+		uint8_t *scaledData = (uint8_t *)av_malloc(scaledBytes);
+		av_image_fill_arrays(scaledFrame->data, scaledFrame->linesize, scaledData, (AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
+		av_frame_make_writable(scaledFrame);
+		int64_t pts = 0;
+		while (count > 0)
+		{
+			auto frames = decodeNextPacket({ muxEntry->vStreamIndex });
+			if (_lastError < 0)
+			{
+				break;
+			}
+			if (frames.isEmpty())
 			{
 				continue;
 			}
-			if (muxEntry->durationUnit == DURATION_SECOND && frame->pts > (muxEntry->startPts + muxEntry->duration * (stream->time_base.den / stream->time_base.num)))
+			for (auto frame : frames)
 			{
-				count = 0;
-				break;
-			}
-
-			scaledFrame->pts = pts++;
-			auto scaleResult = scale(frame, vcc->pix_fmt, muxEntry->width, muxEntry->height, scaledFrame->data, scaledFrame->linesize);
-			_lastError = avcodec_send_frame(vcc, scaledFrame);
-
-			if (_lastError < 0)
-			{
-				FCUtil::printAVError(_lastError, __LINE__, "send frame error");
-				break;
-			}
-			while (_lastError >= 0)
-			{
-				_lastError = avcodec_receive_packet(vcc, outPacket);
-				if (_lastError == AVERROR(EAGAIN) || _lastError == AVERROR_EOF)
+				if (frame->pts < muxEntry->startPts)
 				{
-					_lastError = 0;
+					continue;
+				}
+				if (muxEntry->durationUnit == DURATION_SECOND && frame->pts > (muxEntry->startPts + muxEntry->duration * (stream->time_base.den / stream->time_base.num)))
+				{
+					count = 0;
 					break;
 				}
+
+				scaledFrame->pts = pts++;
+				auto scaleResult = scale(frame, vcc->pix_fmt, muxEntry->width, muxEntry->height, scaledFrame->data, scaledFrame->linesize);
+				_lastError = avcodec_send_frame(vcc, scaledFrame);
+
 				if (_lastError < 0)
 				{
-					FCUtil::printAVError(_lastError, __LINE__, "recv packet error");
+					FCUtil::printAVError(_lastError, __LINE__, "send frame error");
 					break;
 				}
-				av_packet_rescale_ts(outPacket, vcc->time_base, vs->time_base);
-				_lastError = av_interleaved_write_frame(ofc, outPacket);
-				--count;
-				if (_lastError < 0)
+				while (_lastError >= 0)
 				{
-					FCUtil::printAVError(_lastError, __LINE__, "write frame error");
+					_lastError = avcodec_receive_packet(vcc, outPacket);
+					if (_lastError == AVERROR(EAGAIN) || _lastError == AVERROR_EOF)
+					{
+						_lastError = 0;
+						break;
+					}
+					if (_lastError < 0)
+					{
+						FCUtil::printAVError(_lastError, __LINE__, "recv packet error");
+						break;
+					}
+					av_packet_rescale_ts(outPacket, vcc->time_base, vs->time_base);
+					_lastError = av_interleaved_write_frame(ofc, outPacket);
+					--count;
+					if (_lastError < 0)
+					{
+						FCUtil::printAVError(_lastError, __LINE__, "write frame error");
+					}
 				}
+			}
+			for (auto& frame : frames)
+			{
+				av_frame_free(&frame);
 			}
 		}
-	}
-	_lastError = av_write_trailer(ofc);
+		_lastError = av_write_trailer(ofc);
 
-	avcodec_free_context(&vcc);
-	avio_closep(&ofc->pb);
-	avformat_free_context(ofc);
+		av_frame_free(&scaledFrame);
+		avcodec_free_context(&vcc);
+		avio_closep(&ofc->pb);
+		avformat_free_context(ofc);
+		delete muxEntry;
+
+		if (_lastError)
+		{
+			emit errorOcurred();
+		}
+		else
+		{
+			emit saveFinished();
+		}
+		});
 }
 
 QPair<int, QString> FCService::lastError()
@@ -360,16 +380,11 @@ FCScaler::ScaleResult FCService::scale(AVFrame *frame, AVPixelFormat destFormat,
 	return result;
 }
 
-QList<AVFrame*> FCService::decodeNextPacket(int streamIndex)
+QList<AVFrame*> FCService::decodeNextPacket(const QVector<int> &streamFilter)
 {
 	QTime time;
 	time.start();
 	QList<AVFrame*> frames;
-	auto codecContext = getCodecContext(streamIndex);
-	if (!codecContext)
-	{
-		return frames;
-	}
 	auto packet = getPacket();
 	while (!_lastError)
 	{
@@ -384,9 +399,14 @@ QList<AVFrame*> FCService::decodeNextPacket(int streamIndex)
 			FCUtil::printAVError(_lastError, __LINE__, "read frame error");
 			break;
 		}
-		if (packet->stream_index != streamIndex)
+		if (!streamFilter.isEmpty() && !streamFilter.contains(packet->stream_index))
 		{
 			continue;
+		}
+		auto codecContext = getCodecContext(packet->stream_index);
+		if (!codecContext)
+		{
+			return frames;
 		}
 		_lastError = avcodec_send_packet(codecContext, packet);
 		if (_lastError < 0)
