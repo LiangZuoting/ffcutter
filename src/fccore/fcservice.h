@@ -84,5 +84,4 @@ private:
     QMap<int, AVStream*> _mapFromIndexToStream;
     AVPacket *_readPacket = nullptr;
     QVector<QSharedPointer<FCScaler>> _vecScaler;
-    QMutex _scaleMutex;
 };

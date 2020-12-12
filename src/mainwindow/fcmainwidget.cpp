@@ -14,7 +14,7 @@ FCMainWidget::FCMainWidget(QWidget *parent)
 	connect(ui.fastSeekBtn, SIGNAL(clicked()), this, SLOT(onFastSeekClicked()));
 	connect(ui.saveBtn, SIGNAL(clicked()), this, SLOT(onSaveClicked()));
 
-	ui.durationUnitComboBox->addItems({ u8"ึก", u8"ร๋" });
+	ui.durationUnitComboBox->addItems({ u8"ร๋", u8"ึก" });
 }
 
 FCMainWidget::~FCMainWidget()

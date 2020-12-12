@@ -23,6 +23,11 @@ public:
 
 	void destroy();
 
+	int lastError() const
+	{
+		return _lastError;
+	}
+
 private:
 	SwsContext *_swsContext = nullptr;
 	int _srcWidth = 0;
@@ -33,4 +38,5 @@ private:
 	AVPixelFormat _scaledFormat = AV_PIX_FMT_NONE;
 	uint8_t *_scaledImageData[4]{ 0 };
 	int _scaledImageLineSizes[4]{ 0 };
+	int _lastError = 0;
 };

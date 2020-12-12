@@ -10,13 +10,13 @@ int FCScaler::create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int d
 	_swsContext = sws_getContext(srcWidth, srcHeight, srcFormat, destWidth, destHeight, destFormat, SWS_BICUBIC, nullptr, nullptr, nullptr);
 	int bytes = av_image_get_buffer_size(destFormat, destWidth, destHeight, 1);
 	uint8_t *data = (uint8_t *)av_malloc(bytes);
-	int ret = av_image_fill_arrays(_scaledImageData, _scaledImageLineSizes, data, destFormat, destWidth, destHeight, 1);
-	if (ret < 0)
+	_lastError = av_image_fill_arrays(_scaledImageData, _scaledImageLineSizes, data, destFormat, destWidth, destHeight, 1);
+	if (_lastError < 0)
 	{
-		FCUtil::printAVError(ret, __LINE__, "av_image_fill_arrays error");
+		FCUtil::printAVError(_lastError, "av_image_fill_arrays");
 		sws_freeContext(_swsContext);
 		_swsContext = nullptr;
-		return ret;
+		return _lastError;
 	}
 	_srcWidth = srcWidth;
 	_srcHeight = srcHeight;
@@ -42,10 +42,10 @@ FCScaler::ScaleResult FCScaler::scale(const uint8_t *const *srcSlice, const int 
 	{
 		scaledLineSizes = _scaledImageLineSizes;
 	}
-	int ret = sws_scale(_swsContext, srcSlice, srcStride, 0, _srcHeight, scaledData, scaledLineSizes);
-	if (ret <= 0)
+	_lastError = sws_scale(_swsContext, srcSlice, srcStride, 0, _srcHeight, scaledData, scaledLineSizes);
+	if (_lastError <= 0)
 	{
-		FCUtil::printAVError(ret, __LINE__, "sws_scale error");
+		FCUtil::printAVError(_lastError, "sws_scale");
 		return { nullptr, nullptr };
 	}
 	return { scaledData, scaledLineSizes };
