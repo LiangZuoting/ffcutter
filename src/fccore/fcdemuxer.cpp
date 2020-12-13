@@ -100,6 +100,10 @@ QPair<int, QList<AVFrame*>> FCDemuxer::decodeNextPacket(const QVector<int>& stre
 			ret = avcodec_receive_frame(codecContext, frame);
 			if (!ret)
 			{
+				if (frame->pts == AV_NOPTS_VALUE)
+				{
+					frame->pts = frame->pkt_dts;
+				}
 				frames.push_back(frame);
 				continue;
 			}

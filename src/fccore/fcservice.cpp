@@ -120,13 +120,13 @@ void FCService::seekAsync(int streamIndex, double seconds)
 		});
 }
 
-void FCService::scaleAsync(AVFrame *frame, AVPixelFormat destFormat, int destWidth, int destHeight)
+void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
 		QImage image(destWidth, destHeight, QImage::Format_RGB888);
-		auto scaleResult = scale(frame, destFormat, destWidth, destHeight);
+		auto scaleResult = scale(frame, AV_PIX_FMT_RGB24, destWidth, destHeight);
 		if (scaleResult.first)
 		{
 			for (int i = 0; i < destHeight; ++i)
@@ -183,7 +183,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		{
 			count = INT_MAX;
 		}
-		while (count > 0)
+		while (count > 0 && _lastError >= 0)
 		{
 			auto [err, frames] = _demuxer->decodeNextPacket({ muxEntry->vStreamIndex });
 			if (_lastError = err; _lastError < 0)
@@ -220,8 +220,10 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 				av_frame_free(&frame);
 			}
 		}
-
-		_lastError = muxer.writeTrailer();
+		if (_lastError >= 0)
+		{
+			_lastError = muxer.writeTrailer();
+		}
 
 		av_frame_free(&scaledFrame);
 		delete muxEntry;

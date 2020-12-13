@@ -42,8 +42,13 @@ public:
     QList<AVStream*> streams() const;
 
     void seekAsync(int streamIndex, double seconds);
-
-    void scaleAsync(AVFrame* frame, AVPixelFormat destFormat, int destWidth, int destHeight);
+    /// <summary>
+    /// 将视频 frame 缩放到指定分辨率，并转换成 RGB24 格式的 Pixmap
+    /// </summary>
+    /// <param name="frame"></param>
+    /// <param name="destWidth"></param>
+    /// <param name="destHeight"></param>
+    void scaleAsync(AVFrame* frame, int destWidth, int destHeight);
 
     void saveAsync(const FCMuxEntry& entry);
 
