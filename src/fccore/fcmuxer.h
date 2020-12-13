@@ -9,6 +9,9 @@ extern "C"
 #include <libavcodec/avcodec.h>
 }
 
+/// <summary>
+/// encoding and then muxing
+/// </summary>
 class FCMuxer
 {
 public:

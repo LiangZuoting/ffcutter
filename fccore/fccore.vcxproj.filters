@@ -35,6 +35,9 @@
     <ClInclude Include="..\src\fccore\fcmuxer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\fccore\fcdemuxer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\fccore\fcservice.cpp">
@@ -47,6 +50,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\fccore\fcmuxer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\fccore\fcdemuxer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

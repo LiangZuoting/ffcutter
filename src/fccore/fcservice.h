@@ -8,6 +8,7 @@
 #include <QMutex>
 #include "fcscaler.h"
 #include "fcmuxentry.h"
+#include "fcdemuxer.h"
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -40,7 +41,7 @@ public:
     AVStream* stream(int streamIndex) const;
     QList<AVStream*> streams() const;
 
-    void seekAsync(int streamIndex, double timestampInSecond);
+    void seekAsync(int streamIndex, double seconds);
 
     void scaleAsync(AVFrame* frame, AVPixelFormat destFormat, int destWidth, int destHeight);
 
@@ -62,26 +63,13 @@ Q_SIGNALS:
     void saveFinished();
 
 private:
-    bool seek(int streamIndex, int64_t timestamp);
     FCScaler::ScaleResult scale(AVFrame *frame, AVPixelFormat destFormat, int destWidth, int destHeight, uint8_t *scaledData[4] = nullptr, int scaledLineSizes[4] = nullptr);
-    QList<AVFrame *> decodeNextPacket(const QVector<int> &streamFilter);
-    AVCodecContext* getCodecContext(int streamIndex);
-    AVPacket* getPacket();
     QSharedPointer<FCScaler> getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat);
 
     QMutex _mutex;
     int _lastError = 0;
     QString _lastErrorString;
     QThreadPool *_threadPool = nullptr;
-    AVFormatContext* _formatContext = nullptr;
-    /// <summary>
-    /// map from stream index to codec context
-    /// </summary>
-    QMap<int, AVCodecContext*> _mapFromIndexToCodec;
-    /// <summary>
-    /// map from stream index to stream struct
-    /// </summary>
-    QMap<int, AVStream*> _mapFromIndexToStream;
-    AVPacket *_readPacket = nullptr;
+    FCDemuxer* _demuxer = nullptr;
     QVector<QSharedPointer<FCScaler>> _vecScaler;
 };

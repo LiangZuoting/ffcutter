@@ -28,44 +28,24 @@ FCService::~FCService()
 void FCService::openFileAsync(const QString& filePath)
 {
 	QMutexLocker _(&_mutex);
+
+	_demuxer = new FCDemuxer();
+
 	QtConcurrent::run(_threadPool, [&, filePath]() {
 		QMutexLocker _(&_mutex);
 		QTime time;
 		time.start();
-		auto url = filePath.toStdString();
-		do
-		{
-			_lastError = avformat_open_input(&_formatContext, url.data(), nullptr, nullptr);
-			if (_lastError < 0)
-			{
-				FCUtil::printAVError(_lastError, "avformat_open_input");
-				break;
-			}
-			_lastError = avformat_find_stream_info(_formatContext, nullptr);
-			if (_lastError < 0)
-			{
-				FCUtil::printAVError(_lastError, "avformat_find_stream_info");
-				break;
-			}
-			for (unsigned i = 0; i < _formatContext->nb_streams; ++i)
-			{
-				auto stream = _formatContext->streams[i];
-				_mapFromIndexToStream.insert(stream->index, stream);
-			}
-		} while (0);
+		_lastError = _demuxer->open(filePath);
 		qDebug() << "open file time " << time.elapsed();
-
 		if (_lastError < 0)
 		{
-			if (_formatContext)
-			{
-				avformat_close_input(&_formatContext);
-			}
+			delete _demuxer;
+			_demuxer = nullptr;
 			emit errorOcurred();
 		}
 		else
 		{
-			emit fileOpened(_mapFromIndexToStream.values());
+			emit fileOpened(_demuxer->streams());
 		}
 		});
 }
@@ -75,9 +55,17 @@ void FCService::decodeOnePacketAsync(int streamIndex)
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
-		auto frames = decodeNextPacket({ streamIndex });
-		emit frameDeocded(frames);
-		emit decodeFinished();
+		auto [err, frames] = _demuxer->decodeNextPacket({ streamIndex });
+		_lastError = err;
+		if (_lastError < 0)
+		{
+			emit errorOcurred();
+		}
+		else
+		{
+			emit frameDeocded(frames);
+			emit decodeFinished();
+		}
 		});
 }
 
@@ -88,17 +76,14 @@ void FCService::decodePacketsAsync(int streamIndex, int count)
 		QMutexLocker _(&_mutex);
 		for (int i = 0; i < count;)
 		{
-			auto frames = decodeNextPacket({ streamIndex });
-			if (auto [err, errStr] = lastError(); err)
+			auto [err, frames] = _demuxer->decodeNextPacket({ streamIndex });
+			if (_lastError = err; err < 0)
 			{
 				emit errorOcurred();
 				return;
 			}
-			if (!frames.isEmpty())
-			{
-				++i;
-				emit frameDeocded(frames);
-			}
+			++i;
+			emit frameDeocded(frames);
 		}
 		emit decodeFinished();
 		});
@@ -106,31 +91,25 @@ void FCService::decodePacketsAsync(int streamIndex, int count)
 
 AVFormatContext* FCService::formatContext() const
 {
-	return _formatContext;
+	return _demuxer->formatContext();
 }
 
 AVStream* FCService::stream(int streamIndex) const
 {
-	if (auto iter = _mapFromIndexToStream.constFind(streamIndex); iter != _mapFromIndexToStream.cend())
-	{
-		return iter.value();
-	}
-	return nullptr;
+	return _demuxer->stream(streamIndex);
 }
 
 QList<AVStream*> FCService::streams() const
 {
-	return _mapFromIndexToStream.values();
+	return _demuxer->streams();
 }
 
-void FCService::seekAsync(int streamIndex, double timestampInSecond)
+void FCService::seekAsync(int streamIndex, double seconds)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
-		auto stream = _mapFromIndexToStream[streamIndex];
-		int64_t timestamp = timestampInSecond * (stream->time_base.den / stream->time_base.num);
-		if (!seek(streamIndex, timestamp))
+		if (_demuxer->fastSeek(streamIndex, _demuxer->secondToTs(streamIndex, seconds)) < 0)
 		{
 			emit errorOcurred();
 		}
@@ -167,9 +146,9 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
 		// 按视频流 seek 到后边的关键帧
-		seek(muxEntry->vStreamIndex, muxEntry->startPts);
+		_demuxer->fastSeek(muxEntry->vStreamIndex, muxEntry->startPts);
 
-		auto stream = _mapFromIndexToStream[muxEntry->vStreamIndex];
+		auto stream = _demuxer->stream(muxEntry->vStreamIndex);
 		if (muxEntry->fps <= 0)
 		{
 			muxEntry->fps = stream->avg_frame_rate.num / stream->avg_frame_rate.den;
@@ -206,14 +185,10 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		}
 		while (count > 0)
 		{
-			auto frames = decodeNextPacket({ muxEntry->vStreamIndex });
-			if (_lastError < 0)
+			auto [err, frames] = _demuxer->decodeNextPacket({ muxEntry->vStreamIndex });
+			if (_lastError = err; _lastError < 0)
 			{
 				break;
-			}
-			if (frames.isEmpty())
-			{
-				continue;
 			}
 			for (auto frame : frames)
 			{
@@ -238,6 +213,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 				{
 					break;
 				}
+				count -= _lastError;
 			}
 			for (auto& frame : frames)
 			{
@@ -271,29 +247,17 @@ QPair<int, QString> FCService::lastError()
 
 double FCService::timestampToSecond(int streamIndex, int64_t timestamp)
 {
-	auto stream = _mapFromIndexToStream[streamIndex];
-	return double(timestamp) / (stream->time_base.den / stream->time_base.num);
+	return _demuxer->tsToSecond(streamIndex, timestamp);
 }
 
 void FCService::destroy()
 {
 	QMutexLocker _(&_mutex);
-	if (auto codecs = _mapFromIndexToCodec.values(); !codecs.isEmpty())
+	if (_demuxer)
 	{
-		for (auto& c : codecs)
-		{
-			avcodec_free_context(&c);
-		}
-		_mapFromIndexToCodec.clear();
-	}
-	if (_formatContext)
-	{
-		avformat_close_input(&_formatContext);
-		_mapFromIndexToStream.clear();
-	}
-	if (_readPacket)
-	{
-		av_packet_free(&_readPacket);
+		_demuxer->close();
+		delete _demuxer;
+		_demuxer = nullptr;
 	}
 	if (_threadPool)
 	{
@@ -301,22 +265,6 @@ void FCService::destroy()
 		_threadPool = nullptr;
 	}
 	_vecScaler.clear();
-}
-
-bool FCService::seek(int streamIndex, int64_t timestamp)
-{
-	_lastError = av_seek_frame(_formatContext, streamIndex, timestamp, AVSEEK_FLAG_BACKWARD);
-	if (_lastError < 0)
-	{
-		FCUtil::printAVError(_lastError, "av_seek_frame, stream:", streamIndex, ",ts:", timestamp);
-		return false;
-	}
-	auto codecContext = getCodecContext(streamIndex);
-	if (codecContext)
-	{
-		avcodec_flush_buffers(codecContext);
-	}
-	return true;
 }
 
 FCScaler::ScaleResult FCService::scale(AVFrame *frame, AVPixelFormat destFormat, int destWidth, int destHeight, uint8_t *scaledData[4], int scaledLineSizes[4])
@@ -337,105 +285,6 @@ FCScaler::ScaleResult FCService::scale(AVFrame *frame, AVPixelFormat destFormat,
 		}
 	} while (0);
 	return result;
-}
-
-QList<AVFrame*> FCService::decodeNextPacket(const QVector<int> &streamFilter)
-{
-	QTime time;
-	time.start();
-	QList<AVFrame*> frames;
-	auto packet = getPacket();
-	while (_lastError >= 0)
-	{
-		_lastError = av_read_frame(_formatContext, packet);
-		if (_lastError == AVERROR(EAGAIN) || _lastError == AVERROR_EOF)
-		{
-			_lastError = 0;
-			return frames;
-		}
-		if (_lastError < 0)
-		{
-			FCUtil::printAVError(_lastError, "av_read_frame");
-			break;
-		}
-		if (!streamFilter.isEmpty() && !streamFilter.contains(packet->stream_index))
-		{
-			continue;
-		}
-		auto codecContext = getCodecContext(packet->stream_index);
-		if (!codecContext)
-		{
-			return frames;
-		}
-		_lastError = avcodec_send_packet(codecContext, packet);
-		if (_lastError < 0)
-		{
-			FCUtil::printAVError(_lastError, "avcodec_send_packet");
-			break;
-		}
-		while (_lastError >= 0)
-		{
-			AVFrame* frame = av_frame_alloc();
-			_lastError = avcodec_receive_frame(codecContext, frame);
-			if (!_lastError)
-			{
-				frames.push_back(frame);
-				continue;
-			}
-			av_frame_free(&frame);
-			if (_lastError == AVERROR(EAGAIN) || _lastError == AVERROR_EOF)
-			{
-				qDebug() << "decode frame time " << time.elapsed();
-				_lastError = 0;
-				return frames;
-			}
-			FCUtil::printAVError(_lastError, "avcodec_receive_frame");
-			break;
-		}
-	}
-	return frames;
-}
-
-AVCodecContext* FCService::getCodecContext(int streamIndex)
-{
-	if (auto iter = _mapFromIndexToCodec.constFind(streamIndex); iter != _mapFromIndexToCodec.cend())
-	{
-		return iter.value();
-	}
-	else if (auto iter = _mapFromIndexToStream.constFind(streamIndex); iter != _mapFromIndexToStream.cend())
-	{
-		auto stream = iter.value();
-		AVCodec* codec = avcodec_find_decoder(stream->codecpar->codec_id);
-		AVCodecContext* codecContext = avcodec_alloc_context3(codec);
-		_lastError = avcodec_parameters_to_context(codecContext, stream->codecpar);
-		if (_lastError < 0)
-		{
-			FCUtil::printAVError(_lastError, "avcodec_parameters_to_context");
-			avcodec_free_context(&codecContext);
-			return nullptr;
-		}
-		AVDictionary* opts{};
-		_lastError = avcodec_open2(codecContext, codec, &opts);
-		if (_lastError < 0)
-		{
-			FCUtil::printAVError(_lastError, "avcodec_open2");
-			avcodec_free_context(&codecContext);
-			return nullptr;
-		}
-		_mapFromIndexToCodec.insert(streamIndex, codecContext);
-		return codecContext;
-	}
-	return nullptr;
-}
-
-AVPacket* FCService::getPacket()
-{
-	if (!_readPacket)
-	{
-		_readPacket = av_packet_alloc();
-	}
-	av_init_packet(_readPacket);
-	return _readPacket;
 }
 
 QSharedPointer<FCScaler> FCService::getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat)
