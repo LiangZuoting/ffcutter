@@ -3,6 +3,7 @@
 #include <QImage>
 #include "fcutil.h"
 #include "fcmuxer.h"
+#include "fcfilter.h"
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -148,14 +149,23 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		// 按视频流 seek 到后边的关键帧
 		_demuxer->fastSeek(muxEntry->vStreamIndex, muxEntry->startPts);
 
-		auto stream = _demuxer->stream(muxEntry->vStreamIndex);
+		auto demuxStream = _demuxer->stream(muxEntry->vStreamIndex);
 		if (muxEntry->fps <= 0)
 		{
-			muxEntry->fps = stream->avg_frame_rate.num / stream->avg_frame_rate.den;
+			muxEntry->fps = demuxStream->avg_frame_rate.num / demuxStream->avg_frame_rate.den;
 		}
 
 		FCMuxer muxer;
 		_lastError = muxer.create(*muxEntry);
+		if (_lastError < 0)
+		{
+			emit errorOcurred();
+			return;
+		}
+		auto muxStream = muxer.videoStream();
+		FCFilter filter;
+		auto filterStr = QString("scale=width=960:height=540,fps=fps=%1").arg(muxEntry->fps).toStdString();
+		_lastError = filter.create(filterStr.data(), muxEntry->width, muxEntry->height, muxer.videoFormat(), demuxStream->time_base, demuxStream->sample_aspect_ratio);
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
@@ -174,10 +184,17 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			emit errorOcurred();
 			return;
 		}
-		av_frame_make_writable(scaledFrame);
+		_lastError = av_frame_make_writable(scaledFrame);
+		if (_lastError < 0)
+		{
+			FCUtil::printAVError(_lastError, "av_frame_make_writable");
+			_lastError = 0;
+// 			emit errorOcurred();
+// 			return;
+		}
 
 		int64_t pts = 0;
-		int64_t endPts = muxEntry->startPts + muxEntry->duration * (stream->time_base.den / stream->time_base.num);
+		int64_t endPts = muxEntry->startPts + muxEntry->duration * (demuxStream->time_base.den / demuxStream->time_base.num);
 		int count = muxEntry->duration;
 		if (muxEntry->durationUnit == DURATION_SECOND)
 		{
@@ -185,37 +202,46 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		}
 		while (count > 0 && _lastError >= 0)
 		{
-			auto [err, frames] = _demuxer->decodeNextPacket({ muxEntry->vStreamIndex });
-			if (_lastError = err; _lastError < 0)
+			auto [err, decodedFrames] = _demuxer->decodeNextPacket({ muxEntry->vStreamIndex });
+			_lastError = err;
+			for (int i = 0; i < decodedFrames.size() && _lastError >= 0; ++i)
 			{
-				break;
-			}
-			for (auto frame : frames)
-			{
-				if (frame->pts < muxEntry->startPts)
+				auto decodedFrame = decodedFrames[i];
+				if (decodedFrame->pts < muxEntry->startPts)
 				{
 					continue;
 				}
-				if (muxEntry->durationUnit == DURATION_SECOND && frame->pts > endPts)
+				if (muxEntry->durationUnit == DURATION_SECOND && decodedFrame->pts > endPts)
 				{
 					count = 0;
 					break;
 				}
 
-				scaledFrame->pts = pts++;
-				auto scaleResult = scale(frame, muxer.videoFormat(), muxEntry->width, muxEntry->height, scaledFrame->data, scaledFrame->linesize);
+				scaledFrame->pts = decodedFrame->pts;
+				auto scaleResult = scale(decodedFrame, muxer.videoFormat(), muxEntry->width, muxEntry->height, scaledFrame->data, scaledFrame->linesize);
 				if (_lastError < 0)
 				{
 					break;
 				}
-				_lastError = muxer.writeVideo(scaledFrame);
-				if (_lastError < 0)
+
+				auto [err, filteredFrames] = filter.filter(scaledFrame);
+				if (_lastError = err; _lastError < 0)
 				{
 					break;
 				}
-				count -= _lastError;
+				for (int i = 0; i < filteredFrames.size() && _lastError >= 0; ++i)
+				{
+					auto filteredFrame = filteredFrames[i];
+					filteredFrame->pts = pts++;
+					_lastError = muxer.writeVideo(filteredFrame);
+					if (_lastError < 0)
+					{
+						break;
+					}
+					count -= _lastError;
+				}
 			}
-			for (auto& frame : frames)
+			for (auto& frame : decodedFrames)
 			{
 				av_frame_free(&frame);
 			}

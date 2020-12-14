@@ -96,6 +96,11 @@ int FCMuxer::writeTrailer()
 	return ret;
 }
 
+AVStream *FCMuxer::videoStream() const
+{
+	return _videoStream;
+}
+
 AVPixelFormat FCMuxer::videoFormat() const
 {
 	if (_videoCodec)

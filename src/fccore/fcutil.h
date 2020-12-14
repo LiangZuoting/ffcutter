@@ -4,6 +4,7 @@
 #include <QDebug>
 extern "C"
 {
+#include <libavfilter/avfilter.h>
 #include <libavutil/error.h>
 }
 
@@ -19,4 +20,6 @@ public:
 		av_make_error_string(buf, AV_ERROR_MAX_STRING_SIZE, error);
 		c << ",errno=" << error << "," << buf;
 	}
+
+	static void printAVFilterGraph(const QString &filePath, AVFilterGraph *graph);
 };

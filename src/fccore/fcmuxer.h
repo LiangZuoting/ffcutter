@@ -1,8 +1,7 @@
 #pragma once
 
-#include "fcmuxentry.h"
 #include <QPair>
-
+#include "fcmuxentry.h"
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -32,6 +31,7 @@ public:
 
 	int writeTrailer();
 
+	AVStream *videoStream() const;
 	AVPixelFormat videoFormat() const;
 
 	void destroy();

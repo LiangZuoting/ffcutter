@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClInclude Include="..\src\fccore\fccore_global.h" />
     <ClInclude Include="..\src\fccore\fcdemuxer.h" />
+    <ClInclude Include="..\src\fccore\fcfilter.h" />
     <ClInclude Include="..\src\fccore\fcmuxer.h" />
     <ClInclude Include="..\src\fccore\fcscaler.h" />
     <ClInclude Include="..\src\fccore\fcmuxentry.h" />
@@ -21,6 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\fccore\fcdemuxer.cpp" />
+    <ClCompile Include="..\src\fccore\fcfilter.cpp" />
     <ClCompile Include="..\src\fccore\fcmuxer.cpp" />
     <ClCompile Include="..\src\fccore\fcscaler.cpp" />
     <ClCompile Include="..\src\fccore\fcservice.cpp" />
@@ -94,7 +96,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <PreprocessorDefinitions>FCCORE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>FCCORE_LIB;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -108,7 +110,7 @@
       <DebugInformationFormat>None</DebugInformationFormat>
       <Optimization>MaxSpeed</Optimization>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <PreprocessorDefinitions>FCCORE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>FCCORE_LIB;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
