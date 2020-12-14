@@ -27,58 +27,58 @@
     <QtRcc Include="..\src\fccutter.qrc">
       <Filter>Resource Files</Filter>
     </QtRcc>
-    <QtUic Include="..\src\mainwindow\fcmainwindow.ui">
+    <QtUic Include="..\src\fccutter\fcmainwindow.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\mainwindow\fcmainwindow.cpp">
+    <ClCompile Include="..\src\fccutter\fcmainwindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\mainwindow\main.cpp">
+    <ClCompile Include="..\src\fccutter\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\mainwindow\fcmainwidget.cpp">
+    <ClCompile Include="..\src\fccutter\fcmainwidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\mainwindow\fcfileinfowidget.cpp">
+    <ClCompile Include="..\src\fccutter\fcfileinfowidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\mainwindow\fcvideotimelinewidget.cpp">
+    <ClCompile Include="..\src\fccutter\fcvideotimelinewidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\mainwindow\fcvideoframewidget.cpp">
+    <ClCompile Include="..\src\fccutter\fcvideoframewidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcmainwindow.h">
+    <QtMoc Include="..\src\fccutter\fcmainwindow.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="..\src\mainwindow\fcmainwidget.h">
+    <QtMoc Include="..\src\fccutter\fcmainwidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="..\src\mainwindow\fcfileinfowidget.h">
+    <QtMoc Include="..\src\fccutter\fcfileinfowidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="..\src\mainwindow\fcvideotimelinewidget.h">
+    <QtMoc Include="..\src\fccutter\fcvideotimelinewidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="..\src\mainwindow\fcvideoframewidget.h">
+    <QtMoc Include="..\src\fccutter\fcvideoframewidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
-    <QtUic Include="..\src\mainwindow\fcmainwidget.ui">
+    <QtUic Include="..\src\fccutter\fcmainwidget.ui">
       <Filter>Form Files</Filter>
     </QtUic>
-    <QtUic Include="..\src\mainwindow\fcfileinfowidget.ui">
+    <QtUic Include="..\src\fccutter\fcfileinfowidget.ui">
       <Filter>Form Files</Filter>
     </QtUic>
-    <QtUic Include="..\src\mainwindow\fcvideotimelinewidget.ui">
+    <QtUic Include="..\src\fccutter\fcvideotimelinewidget.ui">
       <Filter>Form Files</Filter>
     </QtUic>
-    <QtUic Include="..\src\mainwindow\fcvideoframewidget.ui">
+    <QtUic Include="..\src\fccutter\fcvideoframewidget.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>

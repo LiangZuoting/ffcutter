@@ -44,7 +44,7 @@
     <Import Project="$(QtMsBuild)\qt_defaults.props" />
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <IncludePath>..\src\mainwindow;..\src\thirdparty\ffmpeg\include;..\src\fccore;$(IncludePath)</IncludePath>
+    <IncludePath>..\src\fccutter;..\src\thirdparty\ffmpeg\include;..\src\fccore;$(IncludePath)</IncludePath>
     <LibraryPath>..\src\thirdparty\ffmpeg\lib;$(LibraryPath)</LibraryPath>
     <LibraryWPath>..\src\thirdparty\ffmpeg\bin;$(LibraryWPath)</LibraryWPath>
   </PropertyGroup>
@@ -53,13 +53,13 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>..\src\mainwindow;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\fccutter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>..\src\mainwindow;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\fccutter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>26812</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -111,34 +111,34 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <QtRcc Include="..\src\fccutter.qrc" />
-    <QtUic Include="..\src\mainwindow\fcfileinfowidget.ui" />
-    <QtUic Include="..\src\mainwindow\fcmainwidget.ui" />
-    <QtUic Include="..\src\mainwindow\fcmainwindow.ui" />
-    <QtUic Include="..\src\mainwindow\fcvideoframewidget.ui" />
-    <QtUic Include="..\src\mainwindow\fcvideotimelinewidget.ui" />
+    <QtUic Include="..\src\fccutter\fcfileinfowidget.ui" />
+    <QtUic Include="..\src\fccutter\fcmainwidget.ui" />
+    <QtUic Include="..\src\fccutter\fcmainwindow.ui" />
+    <QtUic Include="..\src\fccutter\fcvideoframewidget.ui" />
+    <QtUic Include="..\src\fccutter\fcvideotimelinewidget.ui" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\mainwindow\fcfileinfowidget.cpp" />
-    <ClCompile Include="..\src\mainwindow\fcmainwidget.cpp" />
-    <ClCompile Include="..\src\mainwindow\fcmainwindow.cpp" />
-    <ClCompile Include="..\src\mainwindow\fcvideoframewidget.cpp" />
-    <ClCompile Include="..\src\mainwindow\fcvideotimelinewidget.cpp" />
-    <ClCompile Include="..\src\mainwindow\main.cpp" />
+    <ClCompile Include="..\src\fccutter\fcfileinfowidget.cpp" />
+    <ClCompile Include="..\src\fccutter\fcmainwidget.cpp" />
+    <ClCompile Include="..\src\fccutter\fcmainwindow.cpp" />
+    <ClCompile Include="..\src\fccutter\fcvideoframewidget.cpp" />
+    <ClCompile Include="..\src\fccutter\fcvideotimelinewidget.cpp" />
+    <ClCompile Include="..\src\fccutter\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcmainwindow.h" />
+    <QtMoc Include="..\src\fccutter\fcmainwindow.h" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcmainwidget.h" />
+    <QtMoc Include="..\src\fccutter\fcmainwidget.h" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcfileinfowidget.h" />
+    <QtMoc Include="..\src\fccutter\fcfileinfowidget.h" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcvideoframewidget.h" />
+    <QtMoc Include="..\src\fccutter\fcvideoframewidget.h" />
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="..\src\mainwindow\fcvideotimelinewidget.h" />
+    <QtMoc Include="..\src\fccutter\fcvideotimelinewidget.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
