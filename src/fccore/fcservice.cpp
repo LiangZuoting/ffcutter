@@ -164,33 +164,12 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		}
 		auto muxStream = muxer.videoStream();
 		FCFilter filter;
-		auto filterStr = QString("scale=width=960:height=540,fps=fps=%1").arg(muxEntry->fps).toStdString();
+		auto filterStr = QString("scale=width=%1:height=%2,format=%3,fps=fps=%4").arg(muxEntry->width).arg(muxEntry->height).arg(av_get_pix_fmt_name(muxer.videoFormat())).arg(muxEntry->fps).toStdString();
 		_lastError = filter.create(filterStr.data(), muxEntry->width, muxEntry->height, muxer.videoFormat(), demuxStream->time_base, demuxStream->sample_aspect_ratio);
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
 			return;
-		}
-
-		AVFrame *scaledFrame = av_frame_alloc();
-		scaledFrame->width = muxEntry->width;
-		scaledFrame->height = muxEntry->height;
-		scaledFrame->format = muxer.videoFormat();
-		int scaledBytes = av_image_get_buffer_size((AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
-		uint8_t *scaledData = (uint8_t *)av_malloc(scaledBytes);
-		_lastError = av_image_fill_arrays(scaledFrame->data, scaledFrame->linesize, scaledData, (AVPixelFormat)scaledFrame->format, muxEntry->width, muxEntry->height, 1);
-		if (_lastError < 0)
-		{
-			emit errorOcurred();
-			return;
-		}
-		_lastError = av_frame_make_writable(scaledFrame);
-		if (_lastError < 0)
-		{
-			FCUtil::printAVError(_lastError, "av_frame_make_writable");
-			_lastError = 0;
-// 			emit errorOcurred();
-// 			return;
 		}
 
 		int64_t pts = 0;
@@ -217,14 +196,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 					break;
 				}
 
-				scaledFrame->pts = decodedFrame->pts;
-				auto scaleResult = scale(decodedFrame, muxer.videoFormat(), muxEntry->width, muxEntry->height, scaledFrame->data, scaledFrame->linesize);
-				if (_lastError < 0)
-				{
-					break;
-				}
-
-				auto [err, filteredFrames] = filter.filter(scaledFrame);
+				auto [err, filteredFrames] = filter.filter(decodedFrame);
 				if (_lastError = err; _lastError < 0)
 				{
 					break;
@@ -250,8 +222,6 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		{
 			_lastError = muxer.writeTrailer();
 		}
-
-		av_frame_free(&scaledFrame);
 		delete muxEntry;
 
 		if (_lastError)
