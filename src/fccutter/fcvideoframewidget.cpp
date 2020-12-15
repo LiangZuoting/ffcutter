@@ -11,6 +11,7 @@ FCVideoFrameWidget::FCVideoFrameWidget(QWidget *parent)
 	: QWidget(parent)
 {
 	ui.setupUi(this);
+	ui.thumbnailLabel->setScaledContents(false);
 }
 
 FCVideoFrameWidget::~FCVideoFrameWidget()
@@ -36,7 +37,10 @@ void FCVideoFrameWidget::setFrame(AVFrame* frame)
 {
 	_frame = frame;
 	ui.ptsLabel->setText(QString::number(_service->timestampToSecond(_streamIndex, frame->pts)));
-	_service->scaleAsync(frame, frame->width / 4, frame->height / 4);
+	QSize size = QSize(frame->width, frame->height).scaled(ui.thumbnailLabel->width(), ui.thumbnailLabel->height(), Qt::KeepAspectRatio);
+	ui.thumbnailLabel->setFixedWidth(size.width());
+	setFixedWidth(size.width());
+	_service->scaleAsync(frame, size.width(), size.height());
 }
 
 void FCVideoFrameWidget::setSelection(bool select)
