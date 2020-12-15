@@ -59,6 +59,7 @@ public:
     void destroy();
 
 Q_SIGNALS:
+    void eof();
     void errorOcurred();
     void fileOpened(QList<AVStream *>);
     void frameDeocded(QList<AVFrame*>);

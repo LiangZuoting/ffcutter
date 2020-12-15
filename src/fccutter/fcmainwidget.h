@@ -28,9 +28,14 @@ private Q_SLOTS:
 	void onVideoFrameSelectionChanged();
 
 private:
-	Ui::FCMainWidget ui;
+	void makeScaleFilter(QString &filters, FCMuxEntry& muxEntry, const AVStream *stream);
+	void makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);
+	void makeTextFilter(QString& filters);
+	void appendFilter(QString &filters, const QString &newFilter);
+	void loadFontSize();
+	void loadFonts();
 
+	Ui::FCMainWidget ui;
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;
-	FCMuxEntry _muxEntry;
 };

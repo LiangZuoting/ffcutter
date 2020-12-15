@@ -58,6 +58,11 @@ void FCService::decodeOnePacketAsync(int streamIndex)
 		QMutexLocker _(&_mutex);
 		auto [err, frames] = _demuxer->decodeNextPacket({ streamIndex });
 		_lastError = err;
+		if (_lastError == AVERROR_EOF)
+		{
+			_lastError = 0;
+			emit eof();
+		}
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
@@ -78,7 +83,14 @@ void FCService::decodePacketsAsync(int streamIndex, int count)
 		for (int i = 0; i < count;)
 		{
 			auto [err, frames] = _demuxer->decodeNextPacket({ streamIndex });
-			if (_lastError = err; err < 0)
+			_lastError = err;
+			if (_lastError == AVERROR_EOF)
+			{
+				_lastError = 0;
+				emit eof();
+				break;
+			}
+			if (_lastError < 0)
 			{
 				emit errorOcurred();
 				return;
@@ -226,6 +238,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		}
 		if (_lastError == AVERROR_EOF)
 		{
+			emit eof();
 			_lastError = 0;
 		}
 		if (_lastError >= 0)

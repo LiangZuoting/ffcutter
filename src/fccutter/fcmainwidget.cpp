@@ -20,16 +20,8 @@ FCMainWidget::FCMainWidget(QWidget *parent)
 	connect(ui.textColorBtn, SIGNAL(clicked()), this, SLOT(onTextColorClicked()));
 
 	ui.durationUnitComboBox->addItems({ u8"Ãë", u8"Ö¡" });
-	ui.fontSizeComboBox->addItems({ "10", "12", "14", "16", "18", "24", "32", "48", "64" });
-
-	QDir fontsDir("fonts");
-	auto ls = fontsDir.entryInfoList(QDir::Files);
-	for (int i = 0; i < ls.size(); ++i)
-	{
-		auto filePath = ls[i].absoluteFilePath();
-		QRawFont rawFont(filePath, 10);
-		ui.fontComboBox->addItem(rawFont.familyName(), filePath);
-	}
+	loadFontSize();
+	loadFonts();
 }
 
 FCMainWidget::~FCMainWidget()
@@ -99,77 +91,19 @@ void FCMainWidget::onSaveClicked()
 		auto filePath = QFileDialog ::getSaveFileName(this, tr("±£´æÎÄ¼þ"), QString());
 		if (!filePath.isEmpty())
 		{
-			int srcWidth = stream->codecpar->width;
-			int srcHeight = stream->codecpar->height;
-			int srcFps = stream->avg_frame_rate.num / stream->avg_frame_rate.den;
-			_muxEntry.filePath = filePath;
-			_muxEntry.width = ui.widthEdit->text().toInt();
-			if (_muxEntry.width <= 0)
-			{
-				_muxEntry.width = srcWidth;
-			}
-			_muxEntry.height = ui.heightEdit->text().toInt();
-			if (_muxEntry.height <= 0)
-			{
-				_muxEntry.height = srcHeight;
-			}
-			_muxEntry.fps = ui.fpsEdit->text().toInt();
-			if (_muxEntry.fps <= 0)
-			{
-				_muxEntry.fps = srcFps;
-			}
-			_muxEntry.startPts = ui.startPtsEdit->text().toDouble();
-			_muxEntry.duration = ui.durationEdit->text().toDouble();
-			_muxEntry.durationUnit = (FCDurationUnit)ui.durationUnitComboBox->currentIndex();
-			_muxEntry.vStreamIndex = _streamIndex;
+			FCMuxEntry muxEntry;
+			muxEntry.filePath = filePath;
+			muxEntry.startPts = ui.startPtsEdit->text().toDouble();
+			muxEntry.duration = ui.durationEdit->text().toDouble();
+			muxEntry.durationUnit = (FCDurationUnit)ui.durationUnitComboBox->currentIndex();
+			muxEntry.vStreamIndex = _streamIndex;
+
 			QString filters;
-			if (_muxEntry.width != srcWidth || _muxEntry.height != srcHeight)
-			{
-				filters = QString("scale=width=%1:height=%2").arg(_muxEntry.width).arg(_muxEntry.height);
-			}
-			if (_muxEntry.fps != srcFps)
-			{
-				if (!filters.isEmpty())
-				{
-					filters.append(',');
-				}
-				filters.append(QString("fps=fps=%1").arg(_muxEntry.fps));
-			}
-			auto text = ui.textEdit->toPlainText();
-			if (!text.isEmpty())
-			{
-				if (!filters.isEmpty())
-				{
-					filters.append(',');
-				}
-				text = text.toUtf8();
-				QString fontFile = ui.fontComboBox->currentData().toString().toUtf8();
-				fontFile = fontFile.replace(':', "\\\\:");
-				int fontSize = ui.fontSizeComboBox->currentText().toInt();
-				QColor fontColor(ui.textColorBtn->text());
-				QString x = "0";
-				QString y = "0";
-				if (ui.alignHCenterBtn->isChecked())
-				{
-					x = "(w-text_w)/2";
-				}
-				else if (ui.alignRightBtn->isChecked())
-				{
-					x = "w-text_w";
-				}
-				if (ui.alignVCenterBtn->isChecked())
-				{
-					y = "(h-text_h)/2";
-				}
-				else if (ui.alignBottomBtn->isChecked())
-				{
-					y = "h-text_h";
-				}
-				filters.append(QString("drawtext=fontfile=%1:fontsize=%2:fontcolor=%3:text=\'%4\':x=%5:y=%6")
-					.arg(fontFile).arg(fontSize).arg(fontColor.name()).arg(text).arg(x).arg(y));
-			}
-			_muxEntry.filterString = filters;
-			_service->saveAsync(_muxEntry);
+			makeScaleFilter(filters, muxEntry, stream);
+			makeFpsFilter(filters, muxEntry, stream);
+			makeTextFilter(filters);
+			muxEntry.filterString = filters;
+			_service->saveAsync(muxEntry);
 		}
 	}
 }
@@ -187,5 +121,102 @@ void FCMainWidget::onVideoFrameSelectionChanged()
 	if (widget)
 	{
 		ui.startPtsEdit->setText(QString::number(widget->selectedPts()));
+	}
+}
+
+void FCMainWidget::makeScaleFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream)
+{
+	int srcWidth = stream->codecpar->width;
+	int srcHeight = stream->codecpar->height;
+	
+	muxEntry.width = ui.widthEdit->text().toInt();
+	if (muxEntry.width <= 0)
+	{
+		muxEntry.width = srcWidth;
+	}
+	muxEntry.height = ui.heightEdit->text().toInt();
+	if (muxEntry.height <= 0)
+	{
+		muxEntry.height = srcHeight;
+	}
+	if (muxEntry.width != srcWidth || muxEntry.height != srcHeight)
+	{
+		appendFilter(filters, QString("scale=width=%1:height=%2").arg(muxEntry.width).arg(muxEntry.height));
+	}
+}
+
+void FCMainWidget::makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream)
+{
+	int srcFps = stream->avg_frame_rate.num / stream->avg_frame_rate.den;
+	muxEntry.fps = ui.fpsEdit->text().toInt();
+	if (muxEntry.fps <= 0)
+	{
+		muxEntry.fps = srcFps;
+	}
+	if (muxEntry.fps != srcFps)
+	{
+		appendFilter(filters, QString("fps=fps=%1").arg(muxEntry.fps));
+	}
+}
+
+void FCMainWidget::makeTextFilter(QString &filters)
+{
+	auto text = ui.textEdit->toPlainText().trimmed();
+	if (!text.isEmpty())
+	{
+		text = text.toUtf8();
+		QString fontFile = ui.fontComboBox->currentData().toString().toUtf8();
+		fontFile = fontFile.replace(':', "\\\\:");
+		int fontSize = ui.fontSizeComboBox->currentText().toInt();
+		QColor fontColor(ui.textColorBtn->text());
+		QString x = "0";
+		QString y = "0";
+		if (ui.alignHCenterBtn->isChecked())
+		{
+			x = "(w-text_w)/2";
+		}
+		else if (ui.alignRightBtn->isChecked())
+		{
+			x = "w-text_w";
+		}
+		if (ui.alignVCenterBtn->isChecked())
+		{
+			y = "(h-text_h)/2";
+		}
+		else if (ui.alignBottomBtn->isChecked())
+		{
+			y = "h-text_h";
+		}
+		appendFilter(filters, QString("drawtext=fontfile=%1:fontsize=%2:fontcolor=%3:text=\'%4\':x=%5:y=%6")
+			.arg(fontFile).arg(fontSize).arg(fontColor.name()).arg(text).arg(x).arg(y));
+	}
+}
+
+void FCMainWidget::appendFilter(QString &filters, const QString &newFilter)
+{
+	if (!filters.isEmpty())
+	{
+		filters.append(',');
+	}
+	filters.append(newFilter);
+}
+
+void FCMainWidget::loadFontSize()
+{
+	QFile f("fontsizes.txt");
+	f.open(QFile::ReadOnly);
+	QString text = f.readAll();
+	ui.fontSizeComboBox->addItems(text.split(','));
+}
+
+void FCMainWidget::loadFonts()
+{
+	QDir fontsDir("fonts");
+	auto ls = fontsDir.entryInfoList(QDir::Files);
+	for (int i = 0; i < ls.size(); ++i)
+	{
+		auto filePath = ls[i].absoluteFilePath();
+		QRawFont rawFont(filePath, 10);
+		ui.fontComboBox->addItem(rawFont.familyName(), filePath);
 	}
 }
