@@ -164,8 +164,14 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		}
 		auto muxStream = muxer.videoStream();
 		FCFilter filter;
-		auto filterStr = QString("scale=width=%1:height=%2,format=%3,fps=fps=%4").arg(muxEntry->width).arg(muxEntry->height).arg(av_get_pix_fmt_name(muxer.videoFormat())).arg(muxEntry->fps).toStdString();
-		_lastError = filter.create(filterStr.data(), muxEntry->width, muxEntry->height, muxer.videoFormat(), demuxStream->time_base, demuxStream->sample_aspect_ratio);
+		auto filterStr = muxEntry->filterString;
+		if (!filterStr.isEmpty())
+		{
+			filterStr.append(',');
+		}
+		filterStr.append("format=").append(av_get_pix_fmt_name(muxer.videoFormat()));
+		auto stdFilterStr = filterStr.toStdString();
+		_lastError = filter.create(stdFilterStr.data(), muxEntry->width, muxEntry->height, muxer.videoFormat(), demuxStream->time_base, demuxStream->sample_aspect_ratio);
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
@@ -217,6 +223,10 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			{
 				av_frame_free(&frame);
 			}
+		}
+		if (_lastError == AVERROR_EOF)
+		{
+			_lastError = 0;
 		}
 		if (_lastError >= 0)
 		{

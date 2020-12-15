@@ -24,6 +24,7 @@ private Q_SLOTS:
 	void onStreamItemSelected(int streamIndex);
 	void onFastSeekClicked();
 	void onSaveClicked();
+	void onTextColorClicked();
 	void onVideoFrameSelectionChanged();
 
 private:

@@ -66,7 +66,7 @@ QPair<int, QList<AVFrame*>> FCDemuxer::decodeNextPacket(const QVector<int>& stre
 		{
 			if (ret == AVERROR_EOF)
 			{
-				ret = 0;
+				break;
 			}
 			else
 			{
