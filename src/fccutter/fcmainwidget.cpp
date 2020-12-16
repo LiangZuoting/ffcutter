@@ -19,7 +19,6 @@ FCMainWidget::FCMainWidget(QWidget *parent)
 	connect(ui.saveBtn, SIGNAL(clicked()), this, SLOT(onSaveClicked()));
 	connect(ui.textColorBtn, SIGNAL(clicked()), this, SLOT(onTextColorClicked()));
 
-	ui.durationUnitComboBox->addItems({ tr(u8"√Î"), tr(u8"÷°") });
 	loadFontSize();
 	loadFonts();
 }
@@ -39,13 +38,13 @@ void FCMainWidget::onFileOpened(QList<AVStream *> streams)
 {
 	ui.fiWidget->setService(_service);
 
-	ui.audioComboBox->addItem(tr(u8"—°‘Ò“Ù∆µ"), -1);
+	ui.audioComboBox->addItem(tr(u8"√ª”–“Ù∆µ"), -1);
 	for (int i = 0; i < streams.size(); ++i)
 	{
 		auto stream = streams[i];
 		if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
 		{
-			ui.audioComboBox->addItem(QString::number(stream->index), stream->index);
+			ui.audioComboBox->addItem(QString("“Ù∆µ %1").arg(stream->index), stream->index);
 		}
 	}
 

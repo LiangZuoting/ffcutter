@@ -128,12 +128,12 @@
             </sizepolicy>
            </property>
            <property name="text">
-            <string>起始时间(pts)：</string>
+            <string>起始时间(秒)：</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="startPtsEdit">
+          <widget class="QLineEdit" name="startSecEdit">
            <property name="maximumSize">
             <size>
              <width>100</width>
@@ -143,7 +143,14 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="durationEdit">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>时长(秒)：</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="durationSecEdit">
            <property name="maximumSize">
             <size>
              <width>100</width>
@@ -152,16 +159,6 @@
            </property>
            <property name="placeholderText">
             <string>时长</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="durationUnitComboBox">
-           <property name="maximumSize">
-            <size>
-             <width>80</width>
-             <height>16777215</height>
-            </size>
            </property>
           </widget>
          </item>
