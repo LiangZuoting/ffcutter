@@ -2,6 +2,7 @@
 
 #include "fccore_global.h"
 #include <QObject>
+#include <QPair>
 #include <QThreadPool>
 #include <QMap>
 #include <QPixmap>
@@ -16,7 +17,7 @@ extern "C"
 }
 
 Q_DECLARE_METATYPE(QList<AVStream*>)
-Q_DECLARE_METATYPE(QList<AVFrame*>)
+Q_DECLARE_METATYPE(QList<FCFrame>)
 
 class FCCORE_EXPORT FCService : public QObject
 {
@@ -62,7 +63,7 @@ Q_SIGNALS:
     void eof();
     void errorOcurred();
     void fileOpened(QList<AVStream *>);
-    void frameDeocded(QList<AVFrame*>);
+    void frameDeocded(QList<FCFrame>);
     void decodeFinished();
     void scaleFinished(QPixmap);
     void seekFinished();

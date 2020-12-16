@@ -55,13 +55,15 @@ int FCDemuxer::exactSeek(int streamIndex, int64_t timestamp)
 	return 0;
 }
 
-QPair<int, QList<AVFrame*>> FCDemuxer::decodeNextPacket(const QVector<int>& streamFilter)
+FCDecodeResult FCDemuxer::decodeNextPacket(const QVector<int>& streamFilter)
 {
 	int ret = 0;
-	QList<AVFrame*> frames;
+	QList<FCFrame> frames;
+	int streamIndex = 0;
 	while (ret >= 0)
 	{
 		ret = av_read_frame(_formatContext, _demuxedPacket);
+		streamIndex = _demuxedPacket->stream_index;
 		if (ret < 0)
 		{
 			if (ret == AVERROR_EOF)
@@ -105,7 +107,7 @@ QPair<int, QList<AVFrame*>> FCDemuxer::decodeNextPacket(const QVector<int>& stre
 				{
 					frame->pts = frame->pkt_dts;
 				}
-				frames.push_back(frame);
+				frames.push_back({ streamIndex, frame });
 				continue;
 			}
 			av_frame_free(&frame);

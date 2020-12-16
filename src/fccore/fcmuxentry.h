@@ -22,5 +22,6 @@ struct FCMuxEntry
 	int fps = 0;
 	QString filterString;
 	// audio
+	int aStreamIndex = -1;
 };
 

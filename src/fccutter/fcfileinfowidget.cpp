@@ -25,7 +25,7 @@ void FCFileInfoWidget::setService(const QSharedPointer<FCService>& service)
 	for (auto stream : streams)
 	{
 		QTreeWidgetItem* item = new QTreeWidgetItem(_rootItem);
-		auto typeStr = av_get_media_type_string(stream->codecpar->codec_type);
+		auto typeStr = QString("%1(%2)").arg(av_get_media_type_string(stream->codecpar->codec_type)).arg(stream->index);
 		item->setText(0, typeStr);
 		item->setData(0, FFDataRole, stream->index);
 	}

@@ -27,7 +27,7 @@ public Q_SLOTS:
 	void decodeOnce();
 
 private Q_SLOTS:
-	void onFrameDecoded(QList<AVFrame*> frames);
+	void onFrameDecoded(QList<FCFrame> frames);
 	void onDecodeFinished();
 	void onVideoFrameClicked();
 

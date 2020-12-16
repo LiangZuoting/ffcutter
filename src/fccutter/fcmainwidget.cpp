@@ -19,7 +19,7 @@ FCMainWidget::FCMainWidget(QWidget *parent)
 	connect(ui.saveBtn, SIGNAL(clicked()), this, SLOT(onSaveClicked()));
 	connect(ui.textColorBtn, SIGNAL(clicked()), this, SLOT(onTextColorClicked()));
 
-	ui.durationUnitComboBox->addItems({ u8"√Î", u8"÷°" });
+	ui.durationUnitComboBox->addItems({ tr(u8"√Î"), tr(u8"÷°") });
 	loadFontSize();
 	loadFonts();
 }
@@ -38,6 +38,17 @@ void FCMainWidget::openFile(const QString& filePath)
 void FCMainWidget::onFileOpened(QList<AVStream *> streams)
 {
 	ui.fiWidget->setService(_service);
+
+	ui.audioComboBox->addItem(tr(u8"—°‘Ò“Ù∆µ"), -1);
+	for (int i = 0; i < streams.size(); ++i)
+	{
+		auto stream = streams[i];
+		if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+		{
+			ui.audioComboBox->addItem(QString::number(stream->index), stream->index);
+		}
+	}
+
 	if (auto [err, des] = _service->lastError(); err < 0)
 	{
 		qDebug() << metaObject()->className() << " open file error " << des;
@@ -60,6 +71,10 @@ void FCMainWidget::onStreamItemSelected(int streamIndex)
 		widget->setStreamIndex(streamIndex);
 		widget->setService(_service);
 		widget->decodeOnce();
+	}
+	else if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+	{
+		_service->decodeOnePacketAsync(_streamIndex);
 	}
 }
 
@@ -97,6 +112,7 @@ void FCMainWidget::onSaveClicked()
 			muxEntry.duration = ui.durationEdit->text().toDouble();
 			muxEntry.durationUnit = (FCDurationUnit)ui.durationUnitComboBox->currentIndex();
 			muxEntry.vStreamIndex = _streamIndex;
+			muxEntry.aStreamIndex = ui.audioComboBox->currentData().toInt();
 
 			QString filters;
 			makeScaleFilter(filters, muxEntry, stream);
@@ -139,10 +155,7 @@ void FCMainWidget::makeScaleFilter(QString &filters, FCMuxEntry &muxEntry, const
 	{
 		muxEntry.height = srcHeight;
 	}
-	if (muxEntry.width != srcWidth || muxEntry.height != srcHeight)
-	{
-		appendFilter(filters, QString("scale=width=%1:height=%2").arg(muxEntry.width).arg(muxEntry.height));
-	}
+	appendFilter(filters, QString("scale=width=%1:height=%2").arg(muxEntry.width).arg(muxEntry.height));
 }
 
 void FCMainWidget::makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream)

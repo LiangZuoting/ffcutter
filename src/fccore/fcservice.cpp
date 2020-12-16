@@ -14,11 +14,14 @@ extern "C"
 FCService::FCService()
 {
 	qRegisterMetaType<QList<AVStream*>>();
-	qRegisterMetaType<QList<AVFrame*>>();
+	qRegisterMetaType<QList<FCFrame>>();
 
 	_threadPool = new QThreadPool(this);
 	_threadPool->setExpiryTimeout(-1);
 	_threadPool->setMaxThreadCount(1);
+
+	av_log_set_level(AV_LOG_TRACE);
+	av_log_set_callback(&av_log_default_callback);
 }
 
 FCService::~FCService()
@@ -199,31 +202,43 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		}
 		while (count > 0 && _lastError >= 0)
 		{
-			auto [err, decodedFrames] = _demuxer->decodeNextPacket({ muxEntry->vStreamIndex });
+			auto [err, decodedFrames] = _demuxer->decodeNextPacket({ muxEntry->vStreamIndex, muxEntry->aStreamIndex });
 			_lastError = err;
 			for (int i = 0; i < decodedFrames.size() && _lastError >= 0; ++i)
 			{
 				auto decodedFrame = decodedFrames[i];
-				if (decodedFrame->pts < muxEntry->startPts)
+				if (decodedFrame.frame->pts < muxEntry->startPts)
 				{
 					continue;
 				}
-				if (muxEntry->durationUnit == DURATION_SECOND && decodedFrame->pts > endPts)
+				if (muxEntry->durationUnit == DURATION_SECOND && decodedFrame.frame->pts > endPts)
 				{
 					count = 0;
 					break;
 				}
 
-				auto [err, filteredFrames] = filter.filter(decodedFrame);
-				if (_lastError = err; _lastError < 0)
+				if (muxEntry->vStreamIndex == decodedFrame.streamIndex)
 				{
-					break;
+					auto [err, filteredFrames] = filter.filter(decodedFrame.frame);
+					if (_lastError = err; _lastError < 0)
+					{
+						break;
+					}
+					for (int i = 0; i < filteredFrames.size() && _lastError >= 0; ++i)
+					{
+						auto filteredFrame = filteredFrames[i];
+						filteredFrame->pts = pts++;
+						_lastError = muxer.writeVideo(filteredFrame);
+						if (_lastError < 0)
+						{
+							break;
+						}
+						count -= _lastError;
+					}
 				}
-				for (int i = 0; i < filteredFrames.size() && _lastError >= 0; ++i)
+				else
 				{
-					auto filteredFrame = filteredFrames[i];
-					filteredFrame->pts = pts++;
-					_lastError = muxer.writeVideo(filteredFrame);
+					_lastError = muxer.writeAudio(decodedFrame.frame);
 					if (_lastError < 0)
 					{
 						break;
@@ -233,7 +248,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			}
 			for (auto& frame : decodedFrames)
 			{
-				av_frame_free(&frame);
+				av_frame_free(&frame.frame);
 			}
 		}
 		if (_lastError == AVERROR_EOF)
@@ -255,6 +270,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		{
 			emit saveFinished();
 		}
+		QThread::sleep(3);
 		});
 }
 

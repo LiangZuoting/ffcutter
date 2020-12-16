@@ -27,7 +27,8 @@ public:
 	/// </summary>
 	/// <param name="frame"></param>
 	/// <returns>负数为错误码，否则为写入的帧数</returns>
-	int writeVideo(const AVFrame *frame);
+	int writeVideo(AVFrame *frame);
+	int writeAudio(AVFrame *frame);
 
 	int writeTrailer();
 
@@ -38,11 +39,15 @@ public:
 
 private:
 	int createVideoCodec(const FCMuxEntry& muxEntry);
+	int createAudioCodec(const FCMuxEntry &muxEntry);
+	int writeFrame(AVFrame *frame, AVMediaType mediaType);
 
 	AVFormatContext *_formatContext = nullptr;
 	AVCodecContext *_audioCodec = nullptr;
+	AVStream *_audioStream = nullptr;
 	AVCodecContext *_videoCodec = nullptr;
 	AVStream* _videoStream = nullptr;
 	AVCodecContext *_subtitleCodec = nullptr;
 	AVPacket* _encodedPacket = nullptr;
+	int64_t _sampleCount = 0;
 };

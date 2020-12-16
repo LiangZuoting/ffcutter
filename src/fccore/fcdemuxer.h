@@ -8,6 +8,18 @@ extern "C"
 #include <libavcodec/avcodec.h>
 }
 
+struct FCFrame
+{
+	int streamIndex;
+	AVFrame *frame;
+};
+
+struct FCDecodeResult
+{
+	int error = 0;
+	QList<FCFrame> frames;
+};
+
 /// <summary>
 /// demuxing and then decoding
 /// </summary>
@@ -40,7 +52,7 @@ public:
 	/// 如果不为空，只解码指定流中的帧；否则解码所有流中的帧
 	/// </param>
 	/// <returns>负数为错误码，否则 second 包含解码后帧数据</returns>
-	QPair<int, QList<AVFrame*>> decodeNextPacket(const QVector<int>& streamFilter);
+	FCDecodeResult decodeNextPacket(const QVector<int>& streamFilter);
 
 	AVFormatContext* formatContext() const;
 	QList<AVStream*> streams() const;

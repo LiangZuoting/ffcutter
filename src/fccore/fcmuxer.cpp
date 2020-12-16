@@ -19,7 +19,12 @@ int FCMuxer::create(const FCMuxEntry &muxEntry)
 		}
 
 		ret = createVideoCodec(muxEntry);
-		if (ret)
+		if (ret < 0)
+		{
+			break;
+		}
+		ret = createAudioCodec(muxEntry);
+		if (ret < 0)
 		{
 			break;
 		}
@@ -46,44 +51,14 @@ int FCMuxer::create(const FCMuxEntry &muxEntry)
 	return ret;
 }
 
-int FCMuxer::writeVideo(const AVFrame *frame)
+int FCMuxer::writeVideo(AVFrame *frame)
 {
-	int count = 0;
-	int ret = avcodec_send_frame(_videoCodec, frame);
-	if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-	{
-		ret = 0;
-	}
-	else while (true)
-	{
-		ret = avcodec_receive_packet(_videoCodec, _encodedPacket);
-		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-		{
-			ret = 0;
-			break;
-		}
-		if (!ret)
-		{
-			av_packet_rescale_ts(_encodedPacket, _videoCodec->time_base, _videoStream->time_base);
-			ret = av_interleaved_write_frame(_formatContext, _encodedPacket);
-			if (ret)
-			{
-				FCUtil::printAVError(ret, "av_interleaved_write_frame");
-				break;
-			}
-			++count;
-		}
-		else
-		{
-			FCUtil::printAVError(ret, "avcodec_receive_packet");
-			break;
-		}
-	}
-	if (!ret)
-	{
-		ret = count;
-	}
-	return ret;
+	return writeFrame(frame, AVMEDIA_TYPE_VIDEO);
+}
+
+int FCMuxer::writeAudio(AVFrame *frame)
+{
+	return writeFrame(frame, AVMEDIA_TYPE_AUDIO);
 }
 
 int FCMuxer::writeTrailer()
@@ -153,6 +128,7 @@ int FCMuxer::createVideoCodec(const FCMuxEntry& muxEntry)
 			_videoCodec->time_base = { 1, muxEntry.fps };
 			_videoCodec->width = muxEntry.width;
 			_videoCodec->height = muxEntry.height;
+			_videoCodec->gop_size = 12;
 			if (auto fmt = videoCodec->pix_fmts[0]; fmt != AV_PIX_FMT_NONE)
 			{
 				_videoCodec->pix_fmt = fmt;
@@ -185,5 +161,102 @@ int FCMuxer::createVideoCodec(const FCMuxEntry& muxEntry)
 			}
 		}
 	} while (0);
+	return ret;
+}
+
+int FCMuxer::createAudioCodec(const FCMuxEntry &muxEntry)
+{
+	int ret = 0;
+	if (muxEntry.aStreamIndex < 0 || _formatContext->oformat->audio_codec == AV_CODEC_ID_NONE)
+	{
+		return ret;
+	}
+	do 
+	{
+		AVCodec *audioCodec = avcodec_find_encoder(_formatContext->oformat->audio_codec);
+		_audioCodec = avcodec_alloc_context3(audioCodec);
+		_audioCodec->bit_rate = 127802;
+		_audioCodec->sample_fmt = AV_SAMPLE_FMT_FLTP;
+		_audioCodec->sample_rate = 44100;
+		_audioCodec->channels = 2;
+		_audioCodec->channel_layout = 3;
+		_audioStream = avformat_new_stream(_formatContext, audioCodec);
+		_audioStream->id = _formatContext->nb_streams - 1;
+		_audioStream->time_base = { 1, _audioCodec->sample_rate };
+		ret = avcodec_parameters_from_context(_audioStream->codecpar, _audioCodec);
+		if (ret < 0)
+		{
+			FCUtil::printAVError(ret, "avcodec_parameters_from_context");
+			break;
+		}
+		ret = avcodec_open2(_audioCodec, audioCodec, nullptr);
+		if (ret < 0)
+		{
+			FCUtil::printAVError(ret, "avcodec_open2");
+			break;
+		}
+	} while (0);
+	return ret;
+}
+
+int FCMuxer::writeFrame(AVFrame *frame, AVMediaType mediaType)
+{
+	AVCodecContext *codecContext = _audioCodec;
+	AVStream *stream = _audioStream;
+	if (mediaType == AVMEDIA_TYPE_VIDEO)
+	{
+		codecContext = _videoCodec;
+		stream = _videoStream;
+	}
+	else
+	{
+		frame->pts = av_rescale_q(_sampleCount, { 1, _audioCodec->sample_rate }, _audioCodec->time_base);
+		_sampleCount += frame->nb_samples;
+	}
+	int count = 0;
+	int ret = avcodec_send_frame(codecContext, frame);
+	if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+	{
+		qDebug("111111111111111111111111111111111111111111111111111");
+		ret = 0;
+	}
+	else if (ret < 0)
+	{
+		FCUtil::printAVError(ret, "avcodec_send_frame");
+	}
+	else while (ret >= 0)
+	{
+		AVPacket packet = { 0 };
+		ret = avcodec_receive_packet(codecContext, &packet);
+		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+		{
+			qDebug("2222222222222222222222222222222222222222222222222");
+			ret = 0;
+			break;
+		}
+		if (!ret)
+		{
+			qDebug("3333333333333333333333333333333333333333333");
+			_encodedPacket->stream_index = stream->index;
+			av_packet_rescale_ts(&packet, codecContext->time_base, stream->time_base);
+			ret = av_interleaved_write_frame(_formatContext, &packet);
+			av_packet_unref(&packet);
+			if (ret)
+			{
+				FCUtil::printAVError(ret, "av_interleaved_write_frame");
+				break;
+			}
+			++count;
+		}
+		else
+		{
+			FCUtil::printAVError(ret, "avcodec_receive_packet");
+			break;
+		}
+	}
+	if (!ret)
+	{
+		ret = count;
+	}
 	return ret;
 }

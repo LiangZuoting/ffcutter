@@ -21,7 +21,7 @@ void FCVideoTimelineWidget::setStreamIndex(int streamIndex)
 void FCVideoTimelineWidget::setService(const QSharedPointer<FCService>& service)
 {
 	_service = service;
-	connect(_service.data(), SIGNAL(frameDeocded(QList<AVFrame*>)), this, SLOT(onFrameDecoded(QList<AVFrame *>)));
+	connect(_service.data(), SIGNAL(frameDeocded(QList<FCFrame>)), this, SLOT(onFrameDecoded(QList<FCFrame>)));
 	connect(_service.data(), SIGNAL(decodeFinished()), this, SLOT(onDecodeFinished()));
 }
 
@@ -40,7 +40,7 @@ int64_t FCVideoTimelineWidget::selectedPts() const
 	return 0;
 }
 
-void FCVideoTimelineWidget::onFrameDecoded(QList<AVFrame*> frames)
+void FCVideoTimelineWidget::onFrameDecoded(QList<FCFrame> frames)
 {
 	if (auto [err, des] = _service->lastError(); err < 0)
 	{
@@ -50,12 +50,15 @@ void FCVideoTimelineWidget::onFrameDecoded(QList<AVFrame*> frames)
 	{
 		for (auto frame : frames)
 		{
-			FCVideoFrameWidget* widget = new FCVideoFrameWidget(this);
-			connect(widget, SIGNAL(doubleClicked()), SLOT(onVideoFrameClicked()));
-			ui.timelineLayout->addWidget(widget);
-			widget->setService(_service);
-			widget->setStreamIndex(_streamIndex);
-			widget->setFrame(frame);
+			if (_streamIndex == frame.streamIndex)
+			{
+				FCVideoFrameWidget *widget = new FCVideoFrameWidget(this);
+				connect(widget, SIGNAL(doubleClicked()), SLOT(onVideoFrameClicked()));
+				ui.timelineLayout->addWidget(widget);
+				widget->setService(_service);
+				widget->setStreamIndex(_streamIndex);
+				widget->setFrame(frame.frame);
+			}
 		}
 	}
 }
