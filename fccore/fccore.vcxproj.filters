@@ -41,6 +41,9 @@
     <ClInclude Include="..\src\fccore\fcfilter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\fccore\fcconst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\fccore\fcservice.cpp">

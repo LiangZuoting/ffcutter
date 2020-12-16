@@ -7,18 +7,7 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 }
-
-struct FCFrame
-{
-	int streamIndex;
-	AVFrame *frame;
-};
-
-struct FCDecodeResult
-{
-	int error = 0;
-	QList<FCFrame> frames;
-};
+#include "fcconst.h"
 
 /// <summary>
 /// demuxing and then decoding
@@ -65,6 +54,7 @@ public:
 
 private:
 	QPair<int, AVCodecContext*> getCodecContext(int streamIndex);
+	FCDecodeResult decodePacket(int streamIndex, AVPacket *packet);
 
 	AVFormatContext* _formatContext = nullptr;
 	// map from stream index to codec context

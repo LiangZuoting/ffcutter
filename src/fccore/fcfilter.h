@@ -5,6 +5,7 @@ extern "C"
 {
 #include <libavfilter/avfilter.h>
 }
+#include "fcconst.h"
 
 class FCFilter
 {
@@ -12,10 +13,12 @@ public:
 	~FCFilter();
 
 	int create(const char* filters, int width, int height, AVPixelFormat pixelFormat, const AVRational& timeBase, const AVRational& sampleAspectRatio);
-	QPair<int, QList<AVFrame*>> filter(AVFrame* frame);
+	FCFilterResult filter(AVFrame* frame);
 	void destroy();
 
 private:
+	FCFilterResult flush();
+
 	AVFilterGraph *_graph = nullptr;
 	AVFilterContext *_srcContext = nullptr;
 	AVFilterContext *_sinkContext = nullptr;

@@ -78,11 +78,15 @@ int FCFilter::create(const char *filters, int width, int height, AVPixelFormat p
 	return ret;
 }
 
-QPair<int, QList<AVFrame *>> FCFilter::filter(AVFrame *frame)
+FCFilterResult FCFilter::filter(AVFrame *frame)
 {
-	int ret = 0;
-	QList<AVFrame *> frames;
+	if (!frame)
+	{
+		return flush();
+	}
 
+	int ret = 0;
+	QList<AVFrame*> frames;
 	while (ret >= 0)
 	{
 		if (ret = av_buffersrc_add_frame_flags(_srcContext, frame, AV_BUFFERSRC_FLAG_KEEP_REF); ret < 0)
@@ -111,6 +115,31 @@ QPair<int, QList<AVFrame *>> FCFilter::filter(AVFrame *frame)
 	if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
 	{
 		ret = 0;
+	}
+	return { ret, frames };
+}
+
+FCFilterResult FCFilter::flush()
+{
+	int ret = 0;
+	QList<AVFrame*> frames;
+	while (ret >= 0)
+	{
+		AVFrame *dstFrame = av_frame_alloc();
+		ret = av_buffersink_get_frame_flags(_sinkContext, dstFrame, AV_BUFFERSINK_FLAG_NO_REQUEST);
+		if (ret >= 0)
+		{
+			frames.push_back(dstFrame);
+			continue;
+		}
+		av_frame_free(&dstFrame);
+		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+		{
+			ret = 0;
+			break;
+		}
+		FCUtil::printAVError(ret, "av_buffersink_get_frame_flags");
+		break;
 	}
 	return { ret, frames };
 }

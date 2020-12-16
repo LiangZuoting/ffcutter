@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\fccore\fcconst.h" />
     <ClInclude Include="..\src\fccore\fccore_global.h" />
     <ClInclude Include="..\src\fccore\fcdemuxer.h" />
     <ClInclude Include="..\src\fccore\fcfilter.h" />

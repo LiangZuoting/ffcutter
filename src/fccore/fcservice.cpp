@@ -164,10 +164,10 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		// 按视频流 seek 到后边的关键帧
 		_demuxer->fastSeek(muxEntry->vStreamIndex, muxEntry->startPts);
 
-		auto demuxStream = _demuxer->stream(muxEntry->vStreamIndex);
+		auto demuxVideoStream = _demuxer->stream(muxEntry->vStreamIndex);
 		if (muxEntry->fps <= 0)
 		{
-			muxEntry->fps = demuxStream->avg_frame_rate.num / demuxStream->avg_frame_rate.den;
+			muxEntry->fps = demuxVideoStream->avg_frame_rate.num / demuxVideoStream->avg_frame_rate.den;
 		}
 
 		FCMuxer muxer;
@@ -177,7 +177,21 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			emit errorOcurred();
 			return;
 		}
-		auto muxStream = muxer.videoStream();
+		QVector<int> streamFilter;
+		if (muxer.videoStream())
+		{
+			streamFilter.push_back(muxEntry->vStreamIndex);
+		}
+		if (muxer.audioStream())
+		{
+			streamFilter.push_back(muxEntry->aStreamIndex);
+		}
+		if (streamFilter.isEmpty())
+		{
+			qCritical("choose at least one stream to save!");
+			return;
+		}
+
 		FCFilter filter;
 		auto filterStr = muxEntry->filterString;
 		if (!filterStr.isEmpty())
@@ -186,7 +200,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		}
 		filterStr.append("format=").append(av_get_pix_fmt_name(muxer.videoFormat()));
 		auto stdFilterStr = filterStr.toStdString();
-		_lastError = filter.create(stdFilterStr.data(), muxEntry->width, muxEntry->height, muxer.videoFormat(), demuxStream->time_base, demuxStream->sample_aspect_ratio);
+		_lastError = filter.create(stdFilterStr.data(), muxEntry->width, muxEntry->height, muxer.videoFormat(), demuxVideoStream->time_base, demuxVideoStream->sample_aspect_ratio);
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
@@ -194,27 +208,43 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		}
 
 		int64_t pts = 0;
-		int64_t endPts = muxEntry->startPts + muxEntry->duration * (demuxStream->time_base.den / demuxStream->time_base.num);
+		int64_t endPts = muxEntry->startPts + muxEntry->duration * (demuxVideoStream->time_base.den / demuxVideoStream->time_base.num);
 		int count = muxEntry->duration;
 		if (muxEntry->durationUnit == DURATION_SECOND)
 		{
 			count = INT_MAX;
 		}
-		while (count > 0 && _lastError >= 0)
+		bool ending = false;
+		while (!ending && count > 0 && _lastError >= 0)
 		{
-			auto [err, decodedFrames] = _demuxer->decodeNextPacket({ muxEntry->vStreamIndex, muxEntry->aStreamIndex });
+			auto [err, decodedFrames] = _demuxer->decodeNextPacket(streamFilter);
 			_lastError = err;
+			ending = _lastError == AVERROR_EOF;
+			if (ending)
+			{
+				_lastError = 0;
+				for (auto i : streamFilter) // 尾部放一个空帧，flush filter & encoder 用
+				{
+					decodedFrames.push_back({ i, nullptr });
+				}
+			}
 			for (int i = 0; i < decodedFrames.size() && _lastError >= 0; ++i)
 			{
 				auto decodedFrame = decodedFrames[i];
-				if (decodedFrame.frame->pts < muxEntry->startPts)
+				if (decodedFrame.frame)
 				{
-					continue;
-				}
-				if (muxEntry->durationUnit == DURATION_SECOND && decodedFrame.frame->pts > endPts)
-				{
-					count = 0;
-					break;
+					if (decodedFrame.frame->pts < muxEntry->startPts)
+					{
+						continue;
+					}
+					if (muxEntry->durationUnit == DURATION_SECOND && decodedFrame.streamIndex == muxEntry->vStreamIndex && decodedFrame.frame->pts > endPts)
+					{
+						ending = true;
+						for (auto i : streamFilter) // 尾部放一个空帧，flush filter & encoder 用
+						{
+							decodedFrames.push_back({ i, nullptr });
+						}
+					}
 				}
 
 				if (muxEntry->vStreamIndex == decodedFrame.streamIndex)
@@ -224,10 +254,17 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 					{
 						break;
 					}
+					if (!decodedFrame.frame)
+					{
+						filteredFrames.push_back(nullptr);
+					}
 					for (int i = 0; i < filteredFrames.size() && _lastError >= 0; ++i)
 					{
 						auto filteredFrame = filteredFrames[i];
-						filteredFrame->pts = pts++;
+						if (filteredFrame)
+						{
+							filteredFrame->pts = pts++;
+						}
 						_lastError = muxer.writeVideo(filteredFrame);
 						if (_lastError < 0)
 						{
@@ -243,18 +280,12 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 					{
 						break;
 					}
-					count -= _lastError;
 				}
 			}
 			for (auto& frame : decodedFrames)
 			{
 				av_frame_free(&frame.frame);
 			}
-		}
-		if (_lastError == AVERROR_EOF)
-		{
-			emit eof();
-			_lastError = 0;
 		}
 		if (_lastError >= 0)
 		{
@@ -268,9 +299,12 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		}
 		else
 		{
+			if (ending)
+			{
+				emit eof();
+			}
 			emit saveFinished();
 		}
-		QThread::sleep(3);
 		});
 }
 

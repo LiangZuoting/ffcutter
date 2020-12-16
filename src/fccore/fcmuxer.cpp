@@ -43,11 +43,6 @@ int FCMuxer::create(const FCMuxEntry &muxEntry)
 		}
 	} while (0);
 
-	if (ret >= 0)
-	{
-		_encodedPacket = av_packet_alloc();
-	}
-
 	return ret;
 }
 
@@ -69,6 +64,11 @@ int FCMuxer::writeTrailer()
 		FCUtil::printAVError(ret, "av_write_trailer");
 	}
 	return ret;
+}
+
+AVStream *FCMuxer::audioStream() const
+{
+	return _audioStream;
 }
 
 AVStream *FCMuxer::videoStream() const
@@ -108,11 +108,6 @@ void FCMuxer::destroy()
 	if (_subtitleCodec)
 	{
 		avcodec_free_context(&_subtitleCodec);
-	}
-	if (_encodedPacket)
-	{
-		av_packet_unref(_encodedPacket);
-		_encodedPacket = nullptr;
 	}
 }
 
@@ -180,6 +175,11 @@ int FCMuxer::createAudioCodec(const FCMuxEntry &muxEntry)
 		_audioCodec->sample_rate = 44100;
 		_audioCodec->channels = 2;
 		_audioCodec->channel_layout = 3;
+		if (_formatContext->oformat->flags & AVFMT_GLOBALHEADER)
+		{
+			_audioCodec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+		}
+
 		_audioStream = avformat_new_stream(_formatContext, audioCodec);
 		_audioStream->id = _formatContext->nb_streams - 1;
 		_audioStream->time_base = { 1, _audioCodec->sample_rate };
@@ -201,8 +201,8 @@ int FCMuxer::createAudioCodec(const FCMuxEntry &muxEntry)
 
 int FCMuxer::writeFrame(AVFrame *frame, AVMediaType mediaType)
 {
-	AVCodecContext *codecContext = _audioCodec;
-	AVStream *stream = _audioStream;
+	AVCodecContext *codecContext = nullptr;
+	AVStream *stream = nullptr;
 	if (mediaType == AVMEDIA_TYPE_VIDEO)
 	{
 		codecContext = _videoCodec;
@@ -210,14 +210,18 @@ int FCMuxer::writeFrame(AVFrame *frame, AVMediaType mediaType)
 	}
 	else
 	{
-		frame->pts = av_rescale_q(_sampleCount, { 1, _audioCodec->sample_rate }, _audioCodec->time_base);
-		_sampleCount += frame->nb_samples;
+		codecContext = _audioCodec;
+		stream = _audioStream;
+		if (frame)
+		{
+			frame->pts = av_rescale_q(_sampleCount, { 1, _audioCodec->sample_rate }, _audioCodec->time_base);
+			_sampleCount += frame->nb_samples;
+		}
 	}
 	int count = 0;
 	int ret = avcodec_send_frame(codecContext, frame);
 	if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
 	{
-		qDebug("111111111111111111111111111111111111111111111111111");
 		ret = 0;
 	}
 	else if (ret < 0)
@@ -230,15 +234,13 @@ int FCMuxer::writeFrame(AVFrame *frame, AVMediaType mediaType)
 		ret = avcodec_receive_packet(codecContext, &packet);
 		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
 		{
-			qDebug("2222222222222222222222222222222222222222222222222");
 			ret = 0;
 			break;
 		}
 		if (!ret)
 		{
-			qDebug("3333333333333333333333333333333333333333333");
-			_encodedPacket->stream_index = stream->index;
 			av_packet_rescale_ts(&packet, codecContext->time_base, stream->time_base);
+			packet.stream_index = stream->index;
 			ret = av_interleaved_write_frame(_formatContext, &packet);
 			av_packet_unref(&packet);
 			if (ret)

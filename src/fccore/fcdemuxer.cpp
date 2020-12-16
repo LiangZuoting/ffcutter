@@ -63,67 +63,31 @@ FCDecodeResult FCDemuxer::decodeNextPacket(const QVector<int>& streamFilter)
 	while (ret >= 0)
 	{
 		ret = av_read_frame(_formatContext, _demuxedPacket);
-		streamIndex = _demuxedPacket->stream_index;
+		if (ret == AVERROR_EOF) // flush all decoders
+		{
+			for (auto i : streamFilter)
+			{
+				auto [err, f] = decodePacket(i, nullptr);
+				ret = err;
+				frames.append(f);
+			}
+			return { !ret ? AVERROR_EOF : ret, frames };
+		}
 		if (ret < 0)
 		{
-			if (ret == AVERROR_EOF)
-			{
-				qDebug() << "av_read_frame to eof";
-				break;
-			}
-			else
-			{
-				FCUtil::printAVError(ret, "av_read_frame");
-			}
+			FCUtil::printAVError(ret, "av_read_frame");
 			break;
 		}
+		streamIndex = _demuxedPacket->stream_index;
 		if (!streamFilter.isEmpty() && !streamFilter.contains(_demuxedPacket->stream_index))
 		{
 			continue;
 		}
-		auto [err, codecContext] = getCodecContext(_demuxedPacket->stream_index);
-		if (err < 0)
+		auto [err, f] = decodePacket(streamIndex, _demuxedPacket);
+		ret = err;
+		if (!f.isEmpty())
 		{
-			break;
-		}
-		ret = avcodec_send_packet(codecContext, _demuxedPacket);
-		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-		{
-			ret = 0;
-			continue;
-		}
-		if (ret < 0)
-		{
-			FCUtil::printAVError(ret, "avcodec_send_packet");
-			break;
-		}
-		while (ret >= 0)
-		{
-			AVFrame* frame = av_frame_alloc();
-			ret = avcodec_receive_frame(codecContext, frame);
-			if (!ret)
-			{
-				if (frame->pts == AV_NOPTS_VALUE)
-				{
-					frame->pts = frame->pkt_dts;
-				}
-				frames.push_back({ streamIndex, frame });
-				continue;
-			}
-			av_frame_free(&frame);
-			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-			{
-				ret = 0;
-				break;
-			}
-			if (ret < 0)
-			{
-				FCUtil::printAVError(ret, "avcodec_receive_frame");
-				break;
-			}
-		}
-		if (!frames.isEmpty())
-		{
+			frames = f;
 			break;
 		}
 	}
@@ -224,4 +188,51 @@ QPair<int, AVCodecContext*> FCDemuxer::getCodecContext(int streamIndex)
 	}
 	FCUtil::printAVError(AVERROR_INVALIDDATA, "getCodecContext");
 	return { AVERROR_INVALIDDATA, nullptr };
+}
+
+FCDecodeResult FCDemuxer::decodePacket(int streamIndex, AVPacket *packet)
+{
+	int ret = 0;
+	QList<FCFrame> frames;
+	do 
+	{
+		auto [err, codecContext] = getCodecContext(streamIndex);
+		ret = err;
+		if (ret < 0)
+		{
+			break;
+		}
+		ret = avcodec_send_packet(codecContext, packet);
+		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+		{
+			ret = 0;
+			break;
+		}
+		if (ret < 0)
+		{
+			FCUtil::printAVError(ret, "avcodec_send_packet");
+		}
+		while (ret >= 0)
+		{
+			AVFrame *frame = av_frame_alloc();
+			ret = avcodec_receive_frame(codecContext, frame);
+			if (ret >= 0)
+			{
+				if (frame->pts == AV_NOPTS_VALUE)
+				{
+					frame->pts = frame->pkt_dts;
+				}
+				frames.push_back({ streamIndex, frame });
+				continue;
+			}
+			av_frame_free(&frame);
+			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+			{
+				ret = 0;
+				break;
+			}
+			FCUtil::printAVError(ret, "avcodec_receive_frame");
+		}
+	} while (0);
+	return { ret, frames };
 }

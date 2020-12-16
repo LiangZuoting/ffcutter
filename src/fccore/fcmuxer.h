@@ -32,6 +32,7 @@ public:
 
 	int writeTrailer();
 
+	AVStream *audioStream() const;
 	AVStream *videoStream() const;
 	AVPixelFormat videoFormat() const;
 
@@ -48,6 +49,5 @@ private:
 	AVCodecContext *_videoCodec = nullptr;
 	AVStream* _videoStream = nullptr;
 	AVCodecContext *_subtitleCodec = nullptr;
-	AVPacket* _encodedPacket = nullptr;
 	int64_t _sampleCount = 0;
 };
