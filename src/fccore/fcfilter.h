@@ -12,7 +12,7 @@ class FCFilter
 public:
 	~FCFilter();
 
-	int create(const char* filters, int width, int height, AVPixelFormat pixelFormat, const AVRational& timeBase, const AVRational& sampleAspectRatio);
+	int create(int srcWidth, int srcHeight, AVPixelFormat srcPixelFormat, const AVRational& srcTimeBase, const AVRational& srcSampleAspectRatio, const char *filters, AVPixelFormat dstPixelFormat);
 	FCFilterResult filter(AVFrame* frame);
 	void destroy();
 

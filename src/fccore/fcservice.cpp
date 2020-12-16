@@ -3,7 +3,6 @@
 #include <QImage>
 #include "fcutil.h"
 #include "fcmuxer.h"
-#include "fcfilter.h"
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -192,22 +191,13 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			return;
 		}
 
-		FCFilter filter;
-		auto filterStr = muxEntry->filterString;
-		if (!filterStr.isEmpty())
-		{
-			filterStr.append(',');
-		}
-		filterStr.append("format=").append(av_get_pix_fmt_name(muxer.videoFormat()));
-		auto stdFilterStr = filterStr.toStdString();
-		_lastError = filter.create(stdFilterStr.data(), muxEntry->width, muxEntry->height, muxer.videoFormat(), demuxVideoStream->time_base, demuxVideoStream->sample_aspect_ratio);
+		FCFilter videoFilter = createVideoFilter(demuxVideoStream, muxEntry->filterString, muxer.videoFormat());
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
 			return;
 		}
 
-		int64_t pts = 0;
 		int64_t endPts = muxEntry->startPts + muxEntry->duration * (demuxVideoStream->time_base.den / demuxVideoStream->time_base.num);
 		int count = muxEntry->duration;
 		if (muxEntry->durationUnit == DURATION_SECOND)
@@ -249,29 +239,22 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 
 				if (muxEntry->vStreamIndex == decodedFrame.streamIndex)
 				{
-					auto [err, filteredFrames] = filter.filter(decodedFrame.frame);
+					auto [err, filteredFrames] = videoFilter.filter(decodedFrame.frame);
 					if (_lastError = err; _lastError < 0)
 					{
+						clearFrames(filteredFrames);
 						break;
 					}
 					if (!decodedFrame.frame)
 					{
 						filteredFrames.push_back(nullptr);
 					}
-					for (int i = 0; i < filteredFrames.size() && _lastError >= 0; ++i)
+					_lastError = muxer.writeVideos(filteredFrames);
+					if (_lastError >= 0)
 					{
-						auto filteredFrame = filteredFrames[i];
-						if (filteredFrame)
-						{
-							filteredFrame->pts = pts++;
-						}
-						_lastError = muxer.writeVideo(filteredFrame);
-						if (_lastError < 0)
-						{
-							break;
-						}
 						count -= _lastError;
 					}
+					clearFrames(filteredFrames);
 				}
 				else
 				{
@@ -282,10 +265,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 					}
 				}
 			}
-			for (auto& frame : decodedFrames)
-			{
-				av_frame_free(&frame.frame);
-			}
+			clearFrames(decodedFrames);
 		}
 		if (_lastError >= 0)
 		{
@@ -378,4 +358,35 @@ QSharedPointer<FCScaler> FCService::getScaler(AVFrame *frame, int destWidth, int
 	}
 	_vecScaler.push_back(scaler);
 	return scaler;
+}
+
+void FCService::clearFrames(QList<AVFrame *> &frames)
+{
+	for (auto &f : frames)
+	{
+		av_frame_free(&f);
+	}
+	frames.clear();
+}
+
+void FCService::clearFrames(QList<FCFrame> &frames)
+{
+	for (auto &f : frames)
+	{
+		av_frame_free(&(f.frame));
+	}
+	frames.clear();
+}
+
+FCFilter FCService::createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat)
+{
+	FCFilter filter;
+	if (!filters.isEmpty())
+	{
+		filters.append(',');
+	}
+	filters.append("format=").append(av_get_pix_fmt_name(dstPixelFormat));
+	auto strFilter = filters.toStdString();
+	_lastError = filter.create(srcStream->codecpar->width, srcStream->codecpar->height, (AVPixelFormat)srcStream->codecpar->format, srcStream->time_base, srcStream->sample_aspect_ratio, strFilter.data(), dstPixelFormat);
+	return filter;
 }

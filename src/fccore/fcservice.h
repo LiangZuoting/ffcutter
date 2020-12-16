@@ -10,6 +10,7 @@
 #include "fcscaler.h"
 #include "fcmuxentry.h"
 #include "fcdemuxer.h"
+#include "fcfilter.h"
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -72,6 +73,9 @@ Q_SIGNALS:
 private:
     FCScaler::ScaleResult scale(AVFrame *frame, AVPixelFormat destFormat, int destWidth, int destHeight, uint8_t *scaledData[4] = nullptr, int scaledLineSizes[4] = nullptr);
     QSharedPointer<FCScaler> getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat);
+    void clearFrames(QList<AVFrame *> &frames);
+    void clearFrames(QList<FCFrame> &frames);
+    FCFilter createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat);
 
     QMutex _mutex;
     int _lastError = 0;

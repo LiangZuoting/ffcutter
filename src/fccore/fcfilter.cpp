@@ -12,7 +12,7 @@ FCFilter::~FCFilter()
 	destroy();
 }
 
-int FCFilter::create(const char *filters, int width, int height, AVPixelFormat pixelFormat, const AVRational& timeBase, const AVRational& sampleAspectRatio)
+int FCFilter::create(int srcWidth, int srcHeight, AVPixelFormat srcPixelFormat, const AVRational &srcTimeBase, const AVRational &srcSampleAspectRatio, const char *filters, AVPixelFormat dstPixelFormat)
 {
 	const AVFilter *srcFilter = avfilter_get_by_name("buffer");
 	const AVFilter *sinkFilter = avfilter_get_by_name("buffersink");
@@ -24,8 +24,8 @@ int FCFilter::create(const char *filters, int width, int height, AVPixelFormat p
 		return AVERROR(ENOMEM);
 	}
 	auto args = QString("width=%1:height=%2:pix_fmt=%3:time_base=%4/%5:pixel_aspect=%6/%7")
-			.arg(width).arg(height).arg(pixelFormat).arg(timeBase.num)
-			.arg(timeBase.den).arg(sampleAspectRatio.num).arg(sampleAspectRatio.den).toStdString();
+			.arg(srcWidth).arg(srcHeight).arg(srcPixelFormat).arg(srcTimeBase.num)
+			.arg(srcTimeBase.den).arg(srcSampleAspectRatio.num).arg(srcSampleAspectRatio.den).toStdString();
 	int ret = 0;
 	do 
 	{
@@ -41,7 +41,7 @@ int FCFilter::create(const char *filters, int width, int height, AVPixelFormat p
 			FCUtil::printAVError(ret, "avfilter_graph_create_filter");
 			break;
 		}
-		AVPixelFormat pix_fmts[] = { pixelFormat, AV_PIX_FMT_NONE };
+		AVPixelFormat pix_fmts[] = { dstPixelFormat, AV_PIX_FMT_NONE };
 		ret = av_opt_set_int_list(_sinkContext, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
 		if (ret < 0)
 		{

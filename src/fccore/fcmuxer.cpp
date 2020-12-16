@@ -48,12 +48,41 @@ int FCMuxer::create(const FCMuxEntry &muxEntry)
 
 int FCMuxer::writeVideo(AVFrame *frame)
 {
-	return writeFrame(frame, AVMEDIA_TYPE_VIDEO);
+	if (frame)
+	{
+		frame->pts = _videoPts++;
+	}
+	return writeFrame(frame, _videoCodec, _videoStream);
+}
+
+int FCMuxer::writeVideos(const QList<AVFrame *> &frames)
+{
+	int ret = 0;
+	int count = 0;
+	for (auto &frame : frames)
+	{
+		ret = writeVideo(frame);
+		if (ret < 0)
+		{
+			break;
+		}
+		count += ret;
+	}
+	if (ret >= 0)
+	{
+		ret = count;
+	}
+	return ret;
 }
 
 int FCMuxer::writeAudio(AVFrame *frame)
 {
-	return writeFrame(frame, AVMEDIA_TYPE_AUDIO);
+	if (frame)
+	{
+		frame->pts = av_rescale_q(_audioPts, { 1, _audioCodec->sample_rate }, _audioCodec->time_base);
+		_audioPts += frame->nb_samples;
+	}
+	return writeFrame(frame, _audioCodec, _audioStream);
 }
 
 int FCMuxer::writeTrailer()
@@ -199,25 +228,8 @@ int FCMuxer::createAudioCodec(const FCMuxEntry &muxEntry)
 	return ret;
 }
 
-int FCMuxer::writeFrame(AVFrame *frame, AVMediaType mediaType)
+int FCMuxer::writeFrame(AVFrame *frame, AVCodecContext *codecContext, AVStream *stream)
 {
-	AVCodecContext *codecContext = nullptr;
-	AVStream *stream = nullptr;
-	if (mediaType == AVMEDIA_TYPE_VIDEO)
-	{
-		codecContext = _videoCodec;
-		stream = _videoStream;
-	}
-	else
-	{
-		codecContext = _audioCodec;
-		stream = _audioStream;
-		if (frame)
-		{
-			frame->pts = av_rescale_q(_sampleCount, { 1, _audioCodec->sample_rate }, _audioCodec->time_base);
-			_sampleCount += frame->nb_samples;
-		}
-	}
 	int count = 0;
 	int ret = avcodec_send_frame(codecContext, frame);
 	if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
