@@ -52,7 +52,7 @@ public:
     /// <param name="destHeight"></param>
     void scaleAsync(AVFrame* frame, int destWidth, int destHeight);
 
-    void saveAsync(const FCMuxEntry& entry);
+    void saveAsync(const FCMuxEntry &muxEntry);
 
     QPair<int, QString> lastError();
 
@@ -75,7 +75,7 @@ private:
     QSharedPointer<FCScaler> getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat);
     void clearFrames(QList<AVFrame *> &frames);
     void clearFrames(QList<FCFrame> &frames);
-    FCFilter createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat);
+    QSharedPointer<FCFilter> createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat);
 
     QMutex _mutex;
     int _lastError = 0;

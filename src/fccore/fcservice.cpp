@@ -153,26 +153,25 @@ void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight)
 		});
 }
 
-void FCService::saveAsync(const FCMuxEntry &entry)
+void FCService::saveAsync(const FCMuxEntry &muxEntry)
 {
-	FCMuxEntry *muxEntry = new FCMuxEntry(entry);
-
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
+		auto entry = muxEntry;
 		QMutexLocker _(&_mutex);
 		// 按视频流 seek 到后边的关键帧
-		auto startPts = _demuxer->secToTs(muxEntry->vStreamIndex, muxEntry->startSec);
-		auto endPts = _demuxer->secToTs(muxEntry->vStreamIndex, muxEntry->startSec + muxEntry->durationSec);
-		_demuxer->fastSeek(muxEntry->vStreamIndex, startPts);
+		auto startPts = _demuxer->secToTs(entry.vStreamIndex, entry.startSec);
+		auto endPts = _demuxer->secToTs(entry.vStreamIndex, entry.startSec + entry.durationSec);
+		_demuxer->fastSeek(entry.vStreamIndex, startPts);
 
-		auto demuxVideoStream = _demuxer->stream(muxEntry->vStreamIndex);
-		if (muxEntry->fps <= 0)
+		auto demuxVideoStream = _demuxer->stream(entry.vStreamIndex);
+		if (entry.fps <= 0)
 		{
-			muxEntry->fps = demuxVideoStream->avg_frame_rate.num / demuxVideoStream->avg_frame_rate.den;
+			entry.fps = demuxVideoStream->avg_frame_rate.num / demuxVideoStream->avg_frame_rate.den;
 		}
 
 		FCMuxer muxer;
-		_lastError = muxer.create(*muxEntry);
+		_lastError = muxer.create(entry);
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
@@ -181,11 +180,11 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		QVector<int> streamFilter;
 		if (muxer.videoStream())
 		{
-			streamFilter.push_back(muxEntry->vStreamIndex);
+			streamFilter.push_back(entry.vStreamIndex);
 		}
 		if (muxer.audioStream())
 		{
-			streamFilter.push_back(muxEntry->aStreamIndex);
+			streamFilter.push_back(entry.aStreamIndex);
 		}
 		if (streamFilter.isEmpty())
 		{
@@ -193,7 +192,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			return;
 		}
 
-		FCFilter videoFilter = createVideoFilter(demuxVideoStream, muxEntry->filterString, muxer.videoFormat());
+		auto videoFilter = createVideoFilter(demuxVideoStream, entry.filterString, muxer.videoFormat());
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
@@ -217,7 +216,7 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			for (int i = 0; i < decodedFrames.size() && _lastError >= 0; ++i)
 			{
 				auto decodedFrame = decodedFrames[i];
-				if (decodedFrame.frame && decodedFrame.streamIndex == muxEntry->vStreamIndex)
+				if (decodedFrame.frame && decodedFrame.streamIndex == entry.vStreamIndex)
 				{
 					if (decodedFrame.frame->pts < startPts)
 					{
@@ -233,9 +232,9 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 					}
 				}
 
-				if (muxEntry->vStreamIndex == decodedFrame.streamIndex)
+				if (entry.vStreamIndex == decodedFrame.streamIndex)
 				{
-					auto [err, filteredFrames] = videoFilter.filter(decodedFrame.frame);
+					auto [err, filteredFrames] = videoFilter->filter(decodedFrame.frame);
 					if (_lastError = err; _lastError < 0)
 					{
 						clearFrames(filteredFrames);
@@ -259,8 +258,6 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		{
 			_lastError = muxer.writeTrailer();
 		}
-		delete muxEntry;
-
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
@@ -362,15 +359,15 @@ void FCService::clearFrames(QList<FCFrame> &frames)
 	frames.clear();
 }
 
-FCFilter FCService::createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat)
+QSharedPointer<FCFilter> FCService::createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat)
 {
-	FCFilter filter;
+	QSharedPointer<FCFilter> filter(new FCFilter());
 	if (!filters.isEmpty())
 	{
 		filters.append(',');
 	}
 	filters.append("format=").append(av_get_pix_fmt_name(dstPixelFormat));
 	auto strFilter = filters.toStdString();
-	_lastError = filter.create(srcStream->codecpar->width, srcStream->codecpar->height, (AVPixelFormat)srcStream->codecpar->format, srcStream->time_base, srcStream->sample_aspect_ratio, strFilter.data(), dstPixelFormat);
+	_lastError = filter->create(srcStream->codecpar->width, srcStream->codecpar->height, (AVPixelFormat)srcStream->codecpar->format, srcStream->time_base, srcStream->sample_aspect_ratio, strFilter.data(), dstPixelFormat);
 	return filter;
 }
