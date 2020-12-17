@@ -1,7 +1,7 @@
 #include "fcloadingdialog.h"
 
 FCLoadingDialog::FCLoadingDialog(QWidget *parent)
-	: QDialog(parent)
+	: QDialog(parent, Qt::WindowFlags(Qt::Dialog | Qt::WindowCloseButtonHint))
 {
 	ui.setupUi(this);
 }
