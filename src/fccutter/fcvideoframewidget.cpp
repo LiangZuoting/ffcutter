@@ -37,7 +37,8 @@ void FCVideoFrameWidget::setFrame(AVFrame* frame)
 {
 	_frame = frame;
 	ui.ptsLabel->setText(QString::number(_service->tsToSec(_streamIndex, frame->pts)));
-	QSize size = QSize(frame->width, frame->height).scaled(ui.thumbnailLabel->width(), ui.thumbnailLabel->height(), Qt::KeepAspectRatio);
+	// 以 widget 的高为基准缩放
+	QSize size = QSize(frame->width, frame->height).scaled(frame->width, ui.thumbnailLabel->height(), Qt::KeepAspectRatio);
 	ui.thumbnailLabel->setFixedWidth(size.width());
 	setFixedWidth(size.width());
 	_service->scaleAsync(frame, size.width(), size.height());
