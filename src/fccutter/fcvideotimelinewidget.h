@@ -19,6 +19,10 @@ public:
 	~FCVideoTimelineWidget();
 
 	void setStreamIndex(int streamIndex);
+	int streamIndex() const
+	{
+		return _streamIndex;
+	}
 	void setService(const QSharedPointer<FCService>& service);
 
 	double selectedSec() const;

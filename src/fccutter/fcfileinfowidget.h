@@ -22,6 +22,8 @@ public:
 
 	void setService(const QSharedPointer<FCService>& service);
 
+	void reset();
+
 Q_SIGNALS:
 	void streamItemSelected(int streamIndex);
 

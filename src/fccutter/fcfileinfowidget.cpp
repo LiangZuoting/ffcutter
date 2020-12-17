@@ -28,9 +28,23 @@ void FCFileInfoWidget::setService(const QSharedPointer<FCService>& service)
 		auto typeStr = QString("%1(%2)").arg(av_get_media_type_string(stream->codecpar->codec_type)).arg(stream->index);
 		item->setText(0, typeStr);
 		item->setData(0, FFDataRole, stream->index);
+		if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+		{
+			ui.infoTree->setCurrentItem(item);
+		}
 	}
 
 	ui.infoTree->expandAll();
+}
+
+void FCFileInfoWidget::reset()
+{
+	_service.reset();
+	_rootItem = nullptr;
+	ui.infoTree->blockSignals(true);
+	ui.infoTree->clear();
+	ui.infoTree->blockSignals(false);
+	ui.detailLabel->setText("");
 }
 
 void FCFileInfoWidget::onItemSelectionChanged()

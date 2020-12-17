@@ -14,7 +14,7 @@ FCMainWidget::FCMainWidget(QWidget *parent)
 {
 	ui.setupUi(this);
 
-	connect(ui.fiWidget, SIGNAL(streamItemSelected(int)), this, SLOT(onStreamItemSelected(int)));
+	connect(ui.fiWidget, SIGNAL(streamItemSelected(int)), this, SLOT(selectStreamItem(int)));
 	connect(ui.fastSeekBtn, SIGNAL(clicked()), this, SLOT(onFastSeekClicked()));
 	connect(ui.saveBtn, SIGNAL(clicked()), this, SLOT(onSaveClicked()));
 	connect(ui.textColorBtn, SIGNAL(clicked()), this, SLOT(onTextColorClicked()));
@@ -29,9 +29,23 @@ FCMainWidget::~FCMainWidget()
 
 void FCMainWidget::openFile(const QString& filePath)
 {
+	closeFile();
+
 	_service.reset(new FCService());
 	connect(_service.data(), SIGNAL(fileOpened(QList<AVStream *>)), this, SLOT(onFileOpened(QList<AVStream *>)));
 	_service->openFileAsync(filePath);
+}
+
+void FCMainWidget::closeFile()
+{
+	if (auto timelineWidget = findChild<FCVideoTimelineWidget *>(); timelineWidget)
+	{
+		ui.layout->removeWidget(timelineWidget);
+		delete timelineWidget;
+	}
+	ui.fiWidget->reset();
+	_streamIndex = -1;
+	_service.reset();
 }
 
 void FCMainWidget::onFileOpened(QList<AVStream *> streams)
@@ -44,7 +58,7 @@ void FCMainWidget::onFileOpened(QList<AVStream *> streams)
 		auto stream = streams[i];
 		if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
 		{
-			ui.audioComboBox->addItem(QString("ÒôÆµ %1").arg(stream->index), stream->index);
+			ui.audioComboBox->addItem(tr(u8"ÒôÆµ %1").arg(stream->index), stream->index);
 		}
 	}
 
@@ -54,26 +68,32 @@ void FCMainWidget::onFileOpened(QList<AVStream *> streams)
 	}
 }
 
-void FCMainWidget::onStreamItemSelected(int streamIndex)
+void FCMainWidget::selectStreamItem(int streamIndex)
 {
 	_streamIndex = streamIndex;
 	auto stream = _service->stream(streamIndex);
 	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
 	{
+		auto w = findChild<FCVideoTimelineWidget *>();
+		if (w && w->streamIndex() == _streamIndex)
+		{
+			return;
+		}
+		if (w && w->streamIndex() != _streamIndex)
+		{
+			ui.layout->removeWidget(w);
+			delete w;
+		}
 		ui.widthEdit->setText(QString::number(stream->codecpar->width));
 		ui.heightEdit->setText(QString::number(stream->codecpar->height));
 		ui.fpsEdit->setText(QString::number(stream->avg_frame_rate.den / stream->avg_frame_rate.num));
 
-		FCVideoTimelineWidget* widget = new FCVideoTimelineWidget(this);
+		FCVideoTimelineWidget *widget = new FCVideoTimelineWidget(this);
 		connect(widget, SIGNAL(selectionChanged()), this, SLOT(onVideoFrameSelectionChanged()));
 		ui.layout->addWidget(widget);
 		widget->setStreamIndex(streamIndex);
 		widget->setService(_service);
 		widget->decodeOnce();
-	}
-	else if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
-	{
-		_service->decodeOnePacketAsync(_streamIndex);
 	}
 }
 

@@ -18,10 +18,11 @@ public:
 	~FCMainWidget();
 
 	void openFile(const QString& filePath);
+	void closeFile();
 
 private Q_SLOTS:
 	void onFileOpened(QList<AVStream *> streams);
-	void onStreamItemSelected(int streamIndex);
+	void selectStreamItem(int streamIndex);
 	void onFastSeekClicked();
 	void onSaveClicked();
 	void onTextColorClicked();
