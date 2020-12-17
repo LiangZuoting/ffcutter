@@ -56,7 +56,7 @@ public:
 
     QPair<int, QString> lastError();
 
-    double timestampToSecond(int streamIndex, int64_t timestamp);
+    double tsToSec(int streamIndex, int64_t timestamp);
 
     void destroy();
 

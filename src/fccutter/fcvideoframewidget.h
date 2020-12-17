@@ -23,6 +23,8 @@ public:
 	void setSelection(bool select);
 
 	AVFrame* frame() const;
+	int64_t pts() const;
+	double sec() const;
 
 protected:
 	void mouseDoubleClickEvent(QMouseEvent* event);

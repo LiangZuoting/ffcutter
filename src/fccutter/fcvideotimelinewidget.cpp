@@ -31,11 +31,11 @@ void FCVideoTimelineWidget::decodeOnce()
 	_service->decodePacketsAsync(_streamIndex, MAX_LIST_SIZE);
 }
 
-int64_t FCVideoTimelineWidget::selectedPts() const
+double FCVideoTimelineWidget::selectedSec() const
 {
 	if (_selected)
 	{
-		return _selected->frame()->pts;
+		return _selected->sec();
 	}
 	return 0;
 }

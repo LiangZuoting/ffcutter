@@ -113,13 +113,13 @@ AVStream* FCDemuxer::stream(int streamIndex) const
 	return nullptr;
 }
 
-double FCDemuxer::tsToSecond(int streamIndex, int64_t timestamp) const
+double FCDemuxer::tsToSec(int streamIndex, int64_t timestamp) const
 {
 	auto tb = stream(streamIndex)->time_base;
 	return (double)timestamp / (tb.den / tb.num);
 }
 
-int64_t FCDemuxer::secondToTs(int streamIndex, double seconds) const
+int64_t FCDemuxer::secToTs(int streamIndex, double seconds) const
 {
 	auto tb = stream(streamIndex)->time_base;
 	return seconds * (tb.den / tb.num);

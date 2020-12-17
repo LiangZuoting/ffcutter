@@ -36,7 +36,7 @@ void FCVideoFrameWidget::setStreamIndex(int streamIndex)
 void FCVideoFrameWidget::setFrame(AVFrame* frame)
 {
 	_frame = frame;
-	ui.ptsLabel->setText(QString::number(_service->timestampToSecond(_streamIndex, frame->pts)));
+	ui.ptsLabel->setText(QString::number(_service->tsToSec(_streamIndex, frame->pts)));
 	QSize size = QSize(frame->width, frame->height).scaled(ui.thumbnailLabel->width(), ui.thumbnailLabel->height(), Qt::KeepAspectRatio);
 	ui.thumbnailLabel->setFixedWidth(size.width());
 	setFixedWidth(size.width());
@@ -51,6 +51,16 @@ void FCVideoFrameWidget::setSelection(bool select)
 AVFrame* FCVideoFrameWidget::frame() const
 {
 	return _frame;
+}
+
+int64_t FCVideoFrameWidget::pts() const
+{
+	return _frame->pts;
+}
+
+double FCVideoFrameWidget::sec() const
+{
+	return _service->tsToSec(_streamIndex, _frame->pts);
 }
 
 void FCVideoFrameWidget::mouseDoubleClickEvent(QMouseEvent* event)

@@ -124,7 +124,7 @@ void FCService::seekAsync(int streamIndex, double seconds)
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
-		if (_demuxer->fastSeek(streamIndex, _demuxer->secondToTs(streamIndex, seconds)) < 0)
+		if (_demuxer->fastSeek(streamIndex, _demuxer->secToTs(streamIndex, seconds)) < 0)
 		{
 			emit errorOcurred();
 		}
@@ -161,7 +161,9 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
 		// 按视频流 seek 到后边的关键帧
-		_demuxer->fastSeek(muxEntry->vStreamIndex, muxEntry->startPts);
+		auto startPts = _demuxer->secToTs(muxEntry->vStreamIndex, muxEntry->startSec);
+		auto endPts = _demuxer->secToTs(muxEntry->vStreamIndex, muxEntry->startSec + muxEntry->durationSec);
+		_demuxer->fastSeek(muxEntry->vStreamIndex, startPts);
 
 		auto demuxVideoStream = _demuxer->stream(muxEntry->vStreamIndex);
 		if (muxEntry->fps <= 0)
@@ -198,14 +200,8 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			return;
 		}
 
-		int64_t endPts = muxEntry->startPts + muxEntry->duration * (demuxVideoStream->time_base.den / demuxVideoStream->time_base.num);
-		int count = muxEntry->duration;
-		if (muxEntry->durationUnit == DURATION_SECOND)
-		{
-			count = INT_MAX;
-		}
 		bool ending = false;
-		while (!ending && count > 0 && _lastError >= 0)
+		while (!ending && _lastError >= 0)
 		{
 			auto [err, decodedFrames] = _demuxer->decodeNextPacket(streamFilter);
 			_lastError = err;
@@ -221,13 +217,13 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 			for (int i = 0; i < decodedFrames.size() && _lastError >= 0; ++i)
 			{
 				auto decodedFrame = decodedFrames[i];
-				if (decodedFrame.frame)
+				if (decodedFrame.frame && decodedFrame.streamIndex == muxEntry->vStreamIndex)
 				{
-					if (decodedFrame.frame->pts < muxEntry->startPts)
+					if (decodedFrame.frame->pts < startPts)
 					{
 						continue;
 					}
-					if (muxEntry->durationUnit == DURATION_SECOND && decodedFrame.streamIndex == muxEntry->vStreamIndex && decodedFrame.frame->pts > endPts)
+					if (decodedFrame.frame->pts > endPts)
 					{
 						ending = true;
 						for (auto i : streamFilter) // 尾部放一个空帧，flush filter & encoder 用
@@ -245,24 +241,16 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 						clearFrames(filteredFrames);
 						break;
 					}
-					if (!decodedFrame.frame)
+					if (!decodedFrame.frame) // flush encoder
 					{
 						filteredFrames.push_back(nullptr);
 					}
 					_lastError = muxer.writeVideos(filteredFrames);
-					if (_lastError >= 0)
-					{
-						count -= _lastError;
-					}
 					clearFrames(filteredFrames);
 				}
 				else
 				{
 					_lastError = muxer.writeAudio(decodedFrame.frame);
-					if (_lastError < 0)
-					{
-						break;
-					}
 				}
 			}
 			clearFrames(decodedFrames);
@@ -273,16 +261,12 @@ void FCService::saveAsync(const FCMuxEntry &entry)
 		}
 		delete muxEntry;
 
-		if (_lastError)
+		if (_lastError < 0)
 		{
 			emit errorOcurred();
 		}
 		else
 		{
-			if (ending)
-			{
-				emit eof();
-			}
 			emit saveFinished();
 		}
 		});
@@ -296,9 +280,9 @@ QPair<int, QString> FCService::lastError()
 	return { _lastError, _lastErrorString };
 }
 
-double FCService::timestampToSecond(int streamIndex, int64_t timestamp)
+double FCService::tsToSec(int streamIndex, int64_t timestamp)
 {
-	return _demuxer->tsToSecond(streamIndex, timestamp);
+	return _demuxer->tsToSec(streamIndex, timestamp);
 }
 
 void FCService::destroy()

@@ -107,9 +107,8 @@ void FCMainWidget::onSaveClicked()
 		{
 			FCMuxEntry muxEntry;
 			muxEntry.filePath = filePath;
-			muxEntry.startPts = ui.startPtsEdit->text().toDouble();
-			muxEntry.duration = ui.durationEdit->text().toDouble();
-			muxEntry.durationUnit = (FCDurationUnit)ui.durationUnitComboBox->currentIndex();
+			muxEntry.startSec = ui.startSecEdit->text().toDouble();
+			muxEntry.durationSec = ui.durationSecEdit->text().toDouble();
 			muxEntry.vStreamIndex = _streamIndex;
 			muxEntry.aStreamIndex = ui.audioComboBox->currentData().toInt();
 
@@ -135,7 +134,7 @@ void FCMainWidget::onVideoFrameSelectionChanged()
 	auto widget = qobject_cast<FCVideoTimelineWidget*>(sender());
 	if (widget)
 	{
-		ui.startPtsEdit->setText(QString::number(widget->selectedPts()));
+		ui.startSecEdit->setText(QString::number(widget->selectedSec()));
 	}
 }
 

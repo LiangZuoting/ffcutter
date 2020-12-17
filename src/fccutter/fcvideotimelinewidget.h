@@ -21,7 +21,7 @@ public:
 	void setStreamIndex(int streamIndex);
 	void setService(const QSharedPointer<FCService>& service);
 
-	int64_t selectedPts() const;
+	double selectedSec() const;
 
 public Q_SLOTS:
 	void decodeOnce();

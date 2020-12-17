@@ -47,8 +47,8 @@ public:
 	QList<AVStream*> streams() const;
 	AVStream* stream(int streamIndex) const;
 
-	double tsToSecond(int streamIndex, int64_t timestamp) const;
-	int64_t secondToTs(int streamIndex, double seconds) const;
+	double tsToSec(int streamIndex, int64_t timestamp) const;
+	int64_t secToTs(int streamIndex, double seconds) const;
 
 	void close();
 
