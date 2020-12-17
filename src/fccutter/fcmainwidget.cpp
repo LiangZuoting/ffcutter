@@ -91,7 +91,7 @@ void FCMainWidget::selectStreamItem(int streamIndex)
 		}
 		ui.widthEdit->setText(QString::number(stream->codecpar->width));
 		ui.heightEdit->setText(QString::number(stream->codecpar->height));
-		ui.fpsEdit->setText(QString::number(stream->avg_frame_rate.den / stream->avg_frame_rate.num));
+		ui.fpsEdit->setText(QString::number(stream->avg_frame_rate.num / stream->avg_frame_rate.den));
 
 		FCVideoTimelineWidget *widget = new FCVideoTimelineWidget(this);
 		connect(widget, SIGNAL(selectionChanged()), this, SLOT(onVideoFrameSelectionChanged()));
