@@ -50,6 +50,9 @@
     <ClCompile Include="..\src\fccutter\fcvideoframewidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\fccutter\fcloadingdialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="..\src\fccutter\fcmainwindow.h">
@@ -67,6 +70,9 @@
     <QtMoc Include="..\src\fccutter\fcvideoframewidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="..\src\fccutter\fcloadingdialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="..\src\fccutter\fcmainwidget.ui">
@@ -79,6 +85,9 @@
       <Filter>Form Files</Filter>
     </QtUic>
     <QtUic Include="..\src\fccutter\fcvideoframewidget.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\src\fccutter\fcloadingdialog.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>

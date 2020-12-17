@@ -8,6 +8,7 @@ extern "C"
 {
 #include <libavformat/avformat.h>
 }
+#include "fcloadingdialog.h"
 
 class FCMainWidget : public QWidget
 {
@@ -27,6 +28,8 @@ private Q_SLOTS:
 	void onSaveClicked();
 	void onTextColorClicked();
 	void onVideoFrameSelectionChanged();
+	void onSaveFinished();
+	void onErrorOcurred();
 
 private:
 	void makeScaleFilter(QString &filters, FCMuxEntry& muxEntry, const AVStream *stream);
@@ -35,8 +38,10 @@ private:
 	void appendFilter(QString &filters, const QString &newFilter);
 	void loadFontSize();
 	void loadFonts();
+	void showLoading(const QString &labelText);
 
 	Ui::FCMainWidget ui;
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;
+	FCLoadingDialog _loadingDialog;
 };

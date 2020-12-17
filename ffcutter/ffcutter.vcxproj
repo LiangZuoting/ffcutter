@@ -92,7 +92,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -112,6 +112,7 @@
   <ItemGroup>
     <QtRcc Include="..\src\fccutter.qrc" />
     <QtUic Include="..\src\fccutter\fcfileinfowidget.ui" />
+    <QtUic Include="..\src\fccutter\fcloadingdialog.ui" />
     <QtUic Include="..\src\fccutter\fcmainwidget.ui" />
     <QtUic Include="..\src\fccutter\fcmainwindow.ui" />
     <QtUic Include="..\src\fccutter\fcvideoframewidget.ui" />
@@ -119,6 +120,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\fccutter\fcfileinfowidget.cpp" />
+    <ClCompile Include="..\src\fccutter\fcloadingdialog.cpp" />
     <ClCompile Include="..\src\fccutter\fcmainwidget.cpp" />
     <ClCompile Include="..\src\fccutter\fcmainwindow.cpp" />
     <ClCompile Include="..\src\fccutter\fcvideoframewidget.cpp" />
@@ -139,6 +141,9 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="..\src\fccutter\fcvideotimelinewidget.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="..\src\fccutter\fcloadingdialog.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

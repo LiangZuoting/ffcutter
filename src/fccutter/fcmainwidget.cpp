@@ -11,6 +11,7 @@
 
 FCMainWidget::FCMainWidget(QWidget *parent)
 	: QWidget(parent)
+	, _loadingDialog(this)
 {
 	ui.setupUi(this);
 
@@ -33,7 +34,10 @@ void FCMainWidget::openFile(const QString& filePath)
 
 	_service.reset(new FCService());
 	connect(_service.data(), SIGNAL(fileOpened(QList<AVStream *>)), this, SLOT(onFileOpened(QList<AVStream *>)));
+	connect(_service.data(), SIGNAL(saveFinished()), this, SLOT(onSaveFinished()));
+	connect(_service.data(), SIGNAL(errorOcurred()), this, SLOT(onErrorOcurred()));
 	_service->openFileAsync(filePath);
+	showLoading(tr(u8"打开文件..."));
 }
 
 void FCMainWidget::closeFile()
@@ -66,6 +70,7 @@ void FCMainWidget::onFileOpened(QList<AVStream *> streams)
 	{
 		qDebug() << metaObject()->className() << " open file error " << des;
 	}
+	_loadingDialog.close();
 }
 
 void FCMainWidget::selectStreamItem(int streamIndex)
@@ -138,6 +143,7 @@ void FCMainWidget::onSaveClicked()
 			makeTextFilter(filters);
 			muxEntry.filterString = filters;
 			_service->saveAsync(muxEntry);
+			showLoading(tr(u8"保存..."));
 		}
 	}
 }
@@ -156,6 +162,16 @@ void FCMainWidget::onVideoFrameSelectionChanged()
 	{
 		ui.startSecEdit->setText(QString::number(widget->selectedSec()));
 	}
+}
+
+void FCMainWidget::onSaveFinished()
+{
+	_loadingDialog.accept();
+}
+
+void FCMainWidget::onErrorOcurred()
+{
+	_loadingDialog.close();
 }
 
 void FCMainWidget::makeScaleFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream)
@@ -250,4 +266,10 @@ void FCMainWidget::loadFonts()
 		QRawFont rawFont(filePath, 10);
 		ui.fontComboBox->addItem(rawFont.familyName(), filePath);
 	}
+}
+
+void FCMainWidget::showLoading(const QString &labelText)
+{
+	_loadingDialog.setLabelText(labelText);
+	_loadingDialog.exec();
 }
