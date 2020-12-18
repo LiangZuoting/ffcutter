@@ -12,6 +12,7 @@ public:
 	~FCLoadingDialog();
 
 	void setLabelText(const QString &text);
+	int exec2(const QString &text);
 
 private:
 	Ui::FCLoadingDialog ui;

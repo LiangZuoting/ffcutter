@@ -29,6 +29,7 @@ void FCVideoTimelineWidget::decodeOnce()
 {
 	clear();
 	_service->decodePacketsAsync(_streamIndex, MAX_LIST_SIZE);
+	_loadingDialog.exec2(tr(u8"½âÂë..."));
 }
 
 double FCVideoTimelineWidget::selectedSec() const
@@ -65,7 +66,7 @@ void FCVideoTimelineWidget::onFrameDecoded(QList<FCFrame> frames)
 
 void FCVideoTimelineWidget::onDecodeFinished()
 {
-
+	_loadingDialog.close();
 }
 
 void FCVideoTimelineWidget::onVideoFrameClicked()

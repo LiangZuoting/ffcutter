@@ -130,7 +130,7 @@ void FCService::seekAsync(int streamIndex, double seconds)
 		}
 		else
 		{
-			emit seekFinished();
+			emit seekFinished(streamIndex);
 		}
 		});
 }

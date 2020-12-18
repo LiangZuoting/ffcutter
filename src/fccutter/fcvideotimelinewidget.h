@@ -9,6 +9,7 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 }
+#include "fcloadingdialog.h"
 
 class FCVideoTimelineWidget : public QWidget
 {
@@ -47,4 +48,5 @@ private:
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;
 	FCVideoFrameWidget* _selected = nullptr;
+	FCLoadingDialog _loadingDialog;
 };

@@ -67,7 +67,7 @@ Q_SIGNALS:
     void frameDeocded(QList<FCFrame>);
     void decodeFinished();
     void scaleFinished(QPixmap);
-    void seekFinished();
+    void seekFinished(int streamIndex);
     void saveFinished();
 
 private:

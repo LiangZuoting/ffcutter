@@ -9,6 +9,9 @@ extern "C"
 #include <libavformat/avformat.h>
 }
 #include "fcloadingdialog.h"
+#include "fceditwidget.h"
+#include "fcfileinfowidget.h"
+#include "fcvideotimelinewidget.h"
 
 class FCMainWidget : public QWidget
 {
@@ -24,24 +27,17 @@ public:
 private Q_SLOTS:
 	void onFileOpened(QList<AVStream *> streams);
 	void selectStreamItem(int streamIndex);
-	void onFastSeekClicked();
-	void onSaveClicked();
-	void onTextColorClicked();
 	void onVideoFrameSelectionChanged();
 	void onSaveFinished();
 	void onErrorOcurred();
+	void onSeekFinished(int streamIndex);
 
 private:
-	void makeScaleFilter(QString &filters, FCMuxEntry& muxEntry, const AVStream *stream);
-	void makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);
-	void makeTextFilter(QString& filters);
-	void appendFilter(QString &filters, const QString &newFilter);
-	void loadFontSize();
-	void loadFonts();
-	void showLoading(const QString &labelText);
-
 	Ui::FCMainWidget ui;
 	QSharedPointer<FCService> _service;
+	FCFileInfoWidget *_fiWidget = nullptr;
+	FCEditWidget *_opWidget = nullptr;
+	FCVideoTimelineWidget *_vTimelineWidget = nullptr;
 	int _streamIndex = -1;
 	FCLoadingDialog _loadingDialog;
 };
