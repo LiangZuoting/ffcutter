@@ -5,12 +5,12 @@ extern "C"
 #include <libavutil/imgutils.h>
 }
 
-int FCScaler::create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int destWidth, int destHeight, AVPixelFormat destFormat)
+int FCScaler::create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int dstWidth, int dstHeight, AVPixelFormat dstFormat)
 {
-	_swsContext = sws_getContext(srcWidth, srcHeight, srcFormat, destWidth, destHeight, destFormat, SWS_BICUBIC, nullptr, nullptr, nullptr);
-	int bytes = av_image_get_buffer_size(destFormat, destWidth, destHeight, 1);
+	_swsContext = sws_getContext(srcWidth, srcHeight, srcFormat, dstWidth, dstHeight, dstFormat, SWS_BICUBIC, nullptr, nullptr, nullptr);
+	int bytes = av_image_get_buffer_size(dstFormat, dstWidth, dstHeight, 1);
 	uint8_t *data = (uint8_t *)av_malloc(bytes);
-	_lastError = av_image_fill_arrays(_scaledImageData, _scaledImageLineSizes, data, destFormat, destWidth, destHeight, 1);
+	_lastError = av_image_fill_arrays(_scaledImageData, _scaledImageLineSizes, data, dstFormat, dstWidth, dstHeight, 1);
 	if (_lastError < 0)
 	{
 		FCUtil::printAVError(_lastError, "av_image_fill_arrays");
@@ -21,9 +21,9 @@ int FCScaler::create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int d
 	_srcWidth = srcWidth;
 	_srcHeight = srcHeight;
 	_srcFormat = srcFormat;
-	_scaledWidth = destWidth;
-	_scaledHeight = destHeight;
-	_scaledFormat = destFormat;
+	_scaledWidth = dstWidth;
+	_scaledHeight = dstHeight;
+	_scaledFormat = dstFormat;
 	return 0;
 }
 
@@ -51,12 +51,12 @@ FCScaler::ScaleResult FCScaler::scale(const uint8_t *const *srcSlice, const int 
 	return { scaledData, scaledLineSizes };
 }
 
-bool FCScaler::equal(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int destWidth, int destHeight, AVPixelFormat destFormat)
+bool FCScaler::equal(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int dstWidth, int dstHeight, AVPixelFormat dstFormat)
 {
 	return _srcWidth == srcWidth &&
 		_srcHeight == srcHeight && _srcFormat == srcFormat &&
-		_scaledWidth == destWidth && _scaledHeight == destHeight &&
-		_scaledFormat == destFormat;
+		_scaledWidth == dstWidth && _scaledHeight == dstHeight &&
+		_scaledFormat == dstFormat;
 }
 
 void FCScaler::destroy()

@@ -15,11 +15,11 @@ public:
 	FCScaler() = default;
 	~FCScaler();
 
-	int create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int destWidth, int destHeight, AVPixelFormat destFormat);
+	int create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int dstWidth, int dstHeight, AVPixelFormat dstFormat);
 
 	ScaleResult scale(const uint8_t* const* srcSlice, const int* srcStride, uint8_t* scaledData[4] = nullptr, int scaledLineSizes[4] = nullptr);
 
-	bool equal(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int destWidth, int destHeight, AVPixelFormat destFormat);
+	bool equal(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int dstWidth, int dstHeight, AVPixelFormat dstFormat);
 
 	void destroy();
 

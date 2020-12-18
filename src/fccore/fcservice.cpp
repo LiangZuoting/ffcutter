@@ -135,18 +135,18 @@ void FCService::seekAsync(int streamIndex, double seconds)
 		});
 }
 
-void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight)
+void FCService::scaleAsync(AVFrame *frame, int dstWidth, int dstHeight)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
-		QImage image(destWidth, destHeight, QImage::Format_RGB888);
-		auto scaleResult = scale(frame, AV_PIX_FMT_RGB24, destWidth, destHeight);
+		QImage image(dstWidth, dstHeight, QImage::Format_RGB888);
+		auto scaleResult = scale(frame, AV_PIX_FMT_RGB24, dstWidth, dstHeight);
 		if (scaleResult.first)
 		{
-			for (int i = 0; i < destHeight; ++i)
+			for (int i = 0; i < dstHeight; ++i)
 			{
-				memcpy(image.scanLine(i), scaleResult.first[0] + i * scaleResult.second[0], destWidth * (image.depth() / 8));
+				memcpy(image.scanLine(i), scaleResult.first[0] + i * scaleResult.second[0], dstWidth * (image.depth() / 8));
 			}
 		}
 		emit scaleFinished(frame, QPixmap::fromImage(image));
@@ -299,12 +299,12 @@ void FCService::destroy()
 	_vecScaler.clear();
 }
 
-FCScaler::ScaleResult FCService::scale(AVFrame *frame, AVPixelFormat destFormat, int destWidth, int destHeight, uint8_t *scaledData[4], int scaledLineSizes[4])
+FCScaler::ScaleResult FCService::scale(AVFrame *frame, AVPixelFormat dstFormat, int dstWidth, int dstHeight, uint8_t *scaledData[4], int scaledLineSizes[4])
 {
 	FCScaler::ScaleResult result = { nullptr, nullptr };
 	do 
 	{
-		auto scaler = getScaler(frame, destWidth, destHeight, destFormat);
+		auto scaler = getScaler(frame, dstWidth, dstHeight, dstFormat);
 		if (!scaler)
 		{
 			break;
@@ -319,20 +319,20 @@ FCScaler::ScaleResult FCService::scale(AVFrame *frame, AVPixelFormat destFormat,
 	return result;
 }
 
-QSharedPointer<FCScaler> FCService::getScaler(AVFrame *frame, int destWidth, int destHeight, AVPixelFormat destFormat)
+QSharedPointer<FCScaler> FCService::getScaler(AVFrame *frame, int dstWidth, int dstHeight, AVPixelFormat dstFormat)
 {
 	if (!_vecScaler.isEmpty())
 	{
 		for (auto& i : _vecScaler)
 		{
-			if (i->equal(frame->width, frame->height, (AVPixelFormat)frame->format, destWidth, destHeight, destFormat))
+			if (i->equal(frame->width, frame->height, (AVPixelFormat)frame->format, dstWidth, dstHeight, dstFormat))
 			{
 				return i;
 			}
 		}
 	}
 	QSharedPointer<FCScaler> scaler = QSharedPointer<FCScaler>(new FCScaler());
-	_lastError = scaler->create(frame->width, frame->height, (AVPixelFormat)frame->format, destWidth, destHeight, destFormat);
+	_lastError = scaler->create(frame->width, frame->height, (AVPixelFormat)frame->format, dstWidth, dstHeight, dstFormat);
 	if (_lastError < 0)
 	{
 		return {};
