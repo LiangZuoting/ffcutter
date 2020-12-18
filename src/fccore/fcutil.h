@@ -2,6 +2,7 @@
 
 #include <QString>
 #include <QDebug>
+#include <QTime>
 extern "C"
 {
 #include <libavfilter/avfilter.h>
@@ -22,4 +23,10 @@ public:
 	}
 
 	static void printAVFilterGraph(const QString &filePath, AVFilterGraph *graph);
+
+	static double durationSecs(const QTime& from, const QTime &to)
+	{
+		double msecs = from.msecsTo(to);
+		return msecs / 1000;
+	}
 };

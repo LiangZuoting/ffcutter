@@ -39,15 +39,15 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QLineEdit" name="seekEdit">
-        <property name="maximumSize">
+       <widget class="QTimeEdit" name="seekEdit">
+        <property name="minimumSize">
          <size>
           <width>100</width>
-          <height>16777215</height>
+          <height>0</height>
          </size>
         </property>
-        <property name="placeholderText">
-         <string>跳转到...(秒)</string>
+        <property name="displayFormat">
+         <string>H:mm:ss.zzz</string>
         </property>
        </widget>
       </item>
@@ -113,37 +113,52 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>起始时间(秒)：</string>
+         <string>起始时间：</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="startSecEdit">
-        <property name="maximumSize">
+       <widget class="QTimeEdit" name="startSecEdit">
+        <property name="minimumSize">
          <size>
           <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
           <height>16777215</height>
          </size>
+        </property>
+        <property name="displayFormat">
+         <string>H:mm:ss.zzz</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>时长(秒)：</string>
+         <string>时长：</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="durationSecEdit">
-        <property name="maximumSize">
+       <widget class="QTimeEdit" name="durationSecEdit">
+        <property name="minimumSize">
          <size>
           <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
           <height>16777215</height>
          </size>
         </property>
-        <property name="placeholderText">
-         <string>时长</string>
+        <property name="displayFormat">
+         <string>H:mm:ss.zzz</string>
         </property>
        </widget>
       </item>

@@ -2,7 +2,9 @@
 #include <QFileDialog>
 #include <QColorDialog>
 #include <QRawFont>
+#include <QTime>
 #include "fcmainwidget.h"
+#include "fcutil.h"
 
 FCEditWidget::FCEditWidget(const QSharedPointer<FCService> &service, FCMainWidget *parent)
 	: QWidget(parent)
@@ -46,11 +48,15 @@ void FCEditWidget::setCurrentStream(int streamIndex)
 	ui.widthEdit->setText(QString::number(stream->codecpar->width));
 	ui.heightEdit->setText(QString::number(stream->codecpar->height));
 	ui.fpsEdit->setText(QString::number(stream->avg_frame_rate.num / stream->avg_frame_rate.den));
+	double msecs = (double)stream->duration * stream->time_base.num / stream->time_base.den * 1000;
+	QTime t = QTime(0,0).addMSecs(msecs);
+	ui.durationSecEdit->setTime(t);
 }
 
 void FCEditWidget::setStartSec(double startSec)
 {
-	ui.startSecEdit->setText(QString::number(startSec));
+	QTime t = QTime(0, 0).addMSecs(startSec * 1000);
+	ui.startSecEdit->setTime(t);
 }
 
 void FCEditWidget::onFastSeekClicked()
@@ -60,7 +66,7 @@ void FCEditWidget::onFastSeekClicked()
 		return;
 	}
 
-	_service->seekAsync(_streamIndex, ui.seekEdit->text().toDouble());
+	_service->seekAsync(_streamIndex, FCUtil::durationSecs(QTime(0,0), ui.seekEdit->time()));
 	_loadingDialog.exec2(tr(u8"Ìø×ª..."));
 }
 
@@ -74,8 +80,8 @@ void FCEditWidget::onSaveClicked()
 		{
 			FCMuxEntry muxEntry;
 			muxEntry.filePath = filePath;
-			muxEntry.startSec = ui.startSecEdit->text().toDouble();
-			muxEntry.durationSec = ui.durationSecEdit->text().toDouble();
+			muxEntry.startSec = FCUtil::durationSecs(QTime(0,0), ui.startSecEdit->time());
+			muxEntry.durationSec = FCUtil::durationSecs(QTime(0,0), ui.durationSecEdit->time());
 			muxEntry.vStreamIndex = _streamIndex;
 			muxEntry.aStreamIndex = ui.audioComboBox->currentData().toInt();
 
