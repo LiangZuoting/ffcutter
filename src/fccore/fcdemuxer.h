@@ -60,5 +60,4 @@ private:
 	// map from stream index to codec context
 	QMap<int, AVCodecContext*> _codecContexts;
 	QMap<int, AVStream*> _streams;
-	AVPacket* _demuxedPacket = nullptr;
 };

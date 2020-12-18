@@ -4,6 +4,7 @@
 extern "C"
 {
 #include <libavutil/frame.h>
+#include <libavcodec/packet.h>
 }
 
 struct FCFrame
@@ -22,4 +23,15 @@ struct FCFilterResult
 {
 	int error = 0;
 	QList<AVFrame *> frames;
+};
+
+/// <summary>
+/// 析构时自动调用 av_packet_unref()
+/// </summary>
+struct FCPacket : AVPacket
+{
+	~FCPacket()
+	{
+		av_packet_unref(this);
+	}
 };

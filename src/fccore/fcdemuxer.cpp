@@ -25,7 +25,6 @@ int FCDemuxer::open(const QString& filePath)
 			break;
 		}
 
-		_demuxedPacket = av_packet_alloc();
 		for (unsigned i = 0; i < _formatContext->nb_streams; ++i)
 		{
 			auto stream = _formatContext->streams[i];
@@ -62,7 +61,8 @@ FCDecodeResult FCDemuxer::decodeNextPacket(const QVector<int>& streamFilter)
 	int streamIndex = 0;
 	while (ret >= 0)
 	{
-		ret = av_read_frame(_formatContext, _demuxedPacket);
+		FCPacket packet = { 0 };
+		ret = av_read_frame(_formatContext, &packet);
 		if (ret == AVERROR_EOF) // flush all decoders
 		{
 			for (auto i : streamFilter)
@@ -78,12 +78,12 @@ FCDecodeResult FCDemuxer::decodeNextPacket(const QVector<int>& streamFilter)
 			FCUtil::printAVError(ret, "av_read_frame");
 			break;
 		}
-		streamIndex = _demuxedPacket->stream_index;
-		if (!streamFilter.isEmpty() && !streamFilter.contains(_demuxedPacket->stream_index))
+		streamIndex = packet.stream_index;
+		if (!streamFilter.isEmpty() && !streamFilter.contains(packet.stream_index))
 		{
 			continue;
 		}
-		auto [err, f] = decodePacket(streamIndex, _demuxedPacket);
+		auto [err, f] = decodePacket(streamIndex, &packet);
 		ret = err;
 		if (!f.isEmpty())
 		{
@@ -138,11 +138,6 @@ void FCDemuxer::close()
 		avcodec_free_context(&(iter.value()));
 	}
 	_codecContexts.clear();
-	if (_demuxedPacket)
-	{
-		av_packet_unref(_demuxedPacket);
-		_demuxedPacket = nullptr;
-	}
 }
 
 QPair<int, AVCodecContext*> FCDemuxer::getCodecContext(int streamIndex)

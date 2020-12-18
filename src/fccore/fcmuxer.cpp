@@ -1,5 +1,6 @@
 #include "fcmuxer.h"
 #include "fcutil.h"
+#include "fcconst.h"
 
 FCMuxer::~FCMuxer()
 {
@@ -242,7 +243,7 @@ int FCMuxer::writeFrame(AVFrame *frame, AVCodecContext *codecContext, AVStream *
 	}
 	else while (ret >= 0)
 	{
-		AVPacket packet = { 0 };
+		FCPacket packet = { 0 };
 		ret = avcodec_receive_packet(codecContext, &packet);
 		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
 		{
@@ -254,7 +255,6 @@ int FCMuxer::writeFrame(AVFrame *frame, AVCodecContext *codecContext, AVStream *
 			av_packet_rescale_ts(&packet, codecContext->time_base, stream->time_base);
 			packet.stream_index = stream->index;
 			ret = av_interleaved_write_frame(_formatContext, &packet);
-			av_packet_unref(&packet);
 			if (ret)
 			{
 				FCUtil::printAVError(ret, "av_interleaved_write_frame");
