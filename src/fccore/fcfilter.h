@@ -22,6 +22,8 @@ public:
 	virtual FCFilterResult filter(AVFrame* frame);
 	virtual void destroy();
 
+	virtual AVMediaType type() const = 0;
+
 protected:
 	virtual int create(const FCFilterParameters &params, const AVFilter *srcFilter, const char *args, const AVFilter *sinkFilter);
 	virtual int setSinkFilter(const FCFilterParameters &params) = 0;

@@ -3,6 +3,7 @@
 extern "C"
 {
 #include <libavutil/opt.h>
+#include <libavfilter/buffersink.h>
 }
 
 int FCAudioFilter::create(const FCFilterParameters& params)
@@ -18,9 +19,13 @@ int FCAudioFilter::create(const FCFilterParameters& params)
 #if DEBUG
 	if (ret >= 0)
 	{
-		FCUtil::printAVFilterGraph("d:\\fcvideofilter.txt", _graph);
+		FCUtil::printAVFilterGraph("d:\\fcaudiofilter.txt", _graph);
 	}
 #endif
+	if (aParams->frameSize > 0) // ÒôÆµ±àÂëÆ÷ÒªÇó¹Ì¶¨³ß´çµÄÊäÈë
+	{
+		av_buffersink_set_frame_size(_sinkContext, aParams->frameSize);
+	}
 	return ret;
 }
 

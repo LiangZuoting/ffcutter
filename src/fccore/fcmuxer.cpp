@@ -86,6 +86,25 @@ int FCMuxer::writeAudio(AVFrame *frame)
 	return writeFrame(frame, _audioCodec, _audioStream);
 }
 
+int FCMuxer::writeAudios(const QList<AVFrame*>& frames)
+{
+	int ret = 0;
+	int count = 0;
+	for (auto &frame : frames)
+	{
+		if ((ret = writeAudio(frame)) < 0)
+		{
+			break;
+		}
+		count += ret;
+	}
+	if (ret >= 0)
+	{
+		ret = count;
+	}
+	return ret;
+}
+
 int FCMuxer::writeTrailer()
 {
 	int ret = av_write_trailer(_formatContext);
@@ -113,6 +132,15 @@ AVPixelFormat FCMuxer::videoFormat() const
 		return _videoCodec->pix_fmt;
 	}
 	return AV_PIX_FMT_NONE;
+}
+
+int FCMuxer::fixedAudioFrameSize() const
+{
+	if (_audioCodec && !(_audioCodec->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
+	{
+		return _audioCodec->frame_size;
+	}
+	return 0;
 }
 
 void FCMuxer::destroy()
@@ -212,9 +240,10 @@ int FCMuxer::createAudioCodec(const FCMuxEntry &muxEntry)
 	{
 		AVCodec *audioCodec = avcodec_find_encoder(_formatContext->oformat->audio_codec);
 		_audioCodec = avcodec_alloc_context3(audioCodec);
+		_audioCodec->time_base = { 1, muxEntry.sampleRate };
 		_audioCodec->bit_rate = muxEntry.aBitrate;
 		_audioCodec->sample_fmt = audioCodec->sample_fmts[0];
-		for (int i = 0; ; ++i)
+		for (int i = 0; audioCodec->sample_fmts; ++i)
 		{
 			auto fmt = audioCodec->sample_fmts[i];
 			if (fmt == AV_SAMPLE_FMT_NONE)
@@ -228,8 +257,7 @@ int FCMuxer::createAudioCodec(const FCMuxEntry &muxEntry)
 			}
 		}
 		_audioCodec->sample_rate = muxEntry.sampleRate;
-		_audioCodec->channel_layout = muxEntry.channel_layout;
-		for (int i = 0; ; ++i)
+		for (int i = 0; audioCodec->channel_layouts; ++i)
 		{
 			auto layout = audioCodec->channel_layouts[i];
 			if (layout == -1)
@@ -241,6 +269,17 @@ int FCMuxer::createAudioCodec(const FCMuxEntry &muxEntry)
 				_audioCodec->channel_layout = layout;
 				break;
 			}
+		}
+		if (!_audioCodec->channel_layout)
+		{
+			if (audioCodec->channel_layouts)
+			{
+				_audioCodec->channel_layout = audioCodec->channel_layouts[0];
+			}
+		}
+		if (!_audioCodec->channel_layout)
+		{
+			_audioCodec->channel_layout = AV_CH_LAYOUT_STEREO;
 		}
 		_audioCodec->channels = av_get_channel_layout_nb_channels(_audioCodec->channel_layout);
 		if (_formatContext->oformat->flags & AVFMT_GLOBALHEADER)

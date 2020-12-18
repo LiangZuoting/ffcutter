@@ -2,8 +2,8 @@
 #include <QtConcurrent>
 #include <QImage>
 #include "fcutil.h"
-#include "fcmuxer.h"
 #include "fcvideofilter.h"
+#include "fcaudiofilter.h"
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -165,6 +165,7 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		auto endPts = _demuxer->secToTs(entry.vStreamIndex, entry.startSec + entry.durationSec);
 		_demuxer->fastSeek(entry.vStreamIndex, startPts);
 
+		AVStream* demuxAudioStream = _demuxer->stream(entry.aStreamIndex);
 		auto demuxVideoStream = _demuxer->stream(entry.vStreamIndex);
 		if (entry.fps <= 0)
 		{
@@ -183,7 +184,8 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		{
 			streamFilter.push_back(entry.vStreamIndex);
 		}
-		if (muxer.audioStream())
+		auto dstAudioStream = muxer.audioStream();
+		if (dstAudioStream)
 		{
 			streamFilter.push_back(entry.aStreamIndex);
 		}
@@ -194,6 +196,12 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		}
 
 		auto videoFilter = createVideoFilter(demuxVideoStream, entry.vfilterString, muxer.videoFormat());
+		if (_lastError < 0)
+		{
+			emit errorOcurred();
+			return;
+		}
+		auto audioFilter = createAudioFilter(demuxAudioStream, entry.aFilterString, dstAudioStream, muxer.fixedAudioFrameSize());
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
@@ -235,22 +243,17 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 
 				if (entry.vStreamIndex == decodedFrame.streamIndex)
 				{
-					auto [err, filteredFrames] = videoFilter->filter(decodedFrame.frame);
-					if (_lastError = err; _lastError < 0)
+					if (!filterAndMuxFrame(videoFilter, muxer, decodedFrame.frame))
 					{
-						clearFrames(filteredFrames);
 						break;
 					}
-					if (!decodedFrame.frame) // flush encoder
-					{
-						filteredFrames.push_back(nullptr);
-					}
-					_lastError = muxer.writeVideos(filteredFrames);
-					clearFrames(filteredFrames);
 				}
-				else
+				else if (entry.aStreamIndex == decodedFrame.streamIndex)
 				{
-					_lastError = muxer.writeAudio(decodedFrame.frame);
+					if (!filterAndMuxFrame(audioFilter, muxer, decodedFrame.frame))
+					{
+						break;
+					}
 				}
 			}
 			clearFrames(decodedFrames);
@@ -378,4 +381,54 @@ QSharedPointer<FCFilter> FCService::createVideoFilter(const AVStream *srcStream,
 	params.filterString = filters;
 	_lastError = filter->create(params);
 	return filter;
+}
+
+QSharedPointer<FCFilter> FCService::createAudioFilter(const AVStream* srcStream, QString filters, const AVStream* dstStream, int frameSize)
+{
+	QSharedPointer<FCFilter> filter(new FCAudioFilter());
+	if (!filters.isEmpty())
+	{
+		filters.append(',');
+	}
+	char layout[100] = { 0 };
+	av_get_channel_layout_string(layout, 100, dstStream->codecpar->channels, dstStream->codecpar->channel_layout);
+	filters.append(QString("aresample=%3,aformat=sample_fmts=%1:channel_layouts=%2")
+		.arg(av_get_sample_fmt_name((AVSampleFormat)dstStream->codecpar->format))
+		.arg(layout).arg(dstStream->codecpar->sample_rate));
+	FCAudioFilterParameters params{};
+	params.srcTimeBase = srcStream->time_base;
+	params.srcSampleFormat = (AVSampleFormat)srcStream->codecpar->format;
+	params.srcSampleRate = srcStream->codecpar->sample_rate;
+	params.srcChannelLayout = srcStream->codecpar->channel_layout;
+	params.dstSampleFormat = (AVSampleFormat)dstStream->codecpar->format;
+	params.dstSampleRate = dstStream->codecpar->sample_rate;
+	params.dstChannelLayout = dstStream->codecpar->channel_layout;
+	params.filterString = filters;
+	params.frameSize = frameSize;
+	_lastError = filter->create(params);
+	return filter;
+}
+
+bool FCService::filterAndMuxFrame(QSharedPointer<FCFilter>& filter, FCMuxer& muxer, AVFrame* frame)
+{
+	auto [err, filteredFrames] = filter->filter(frame);
+	if (_lastError = err; _lastError < 0)
+	{
+		clearFrames(filteredFrames);
+		return false;
+	}
+	if (!frame) // flush encoder
+	{
+		filteredFrames.push_back(nullptr);
+	}
+	if (filter->type() == AVMEDIA_TYPE_VIDEO)
+	{
+		_lastError = muxer.writeVideos(filteredFrames);
+	}	
+	else
+	{
+		_lastError = muxer.writeAudios(filteredFrames);
+	}
+	clearFrames(filteredFrames);
+	return _lastError >= 0;
 }

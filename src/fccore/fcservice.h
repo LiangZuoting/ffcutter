@@ -8,6 +8,7 @@
 #include <QPixmap>
 #include <QMutex>
 #include "fcscaler.h"
+#include "fcmuxer.h"
 #include "fcmuxentry.h"
 #include "fcdemuxer.h"
 #include "fcfilter.h"
@@ -76,6 +77,8 @@ private:
     void clearFrames(QList<AVFrame *> &frames);
     void clearFrames(QList<FCFrame> &frames);
     QSharedPointer<FCFilter> createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat);
+    QSharedPointer<FCFilter> createAudioFilter(const AVStream* srcStream, QString filters, const AVStream* dstStream, int frameSize);
+    bool filterAndMuxFrame(QSharedPointer<FCFilter>& filter, FCMuxer& muxer, AVFrame* frame);
 
     QMutex _mutex;
     int _lastError = 0;

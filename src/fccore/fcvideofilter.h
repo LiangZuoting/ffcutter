@@ -15,6 +15,11 @@ class FCVideoFilter : public FCFilter
 public:
 	int create(const FCFilterParameters& params) override;
 
+	AVMediaType type() const override
+	{
+		return AVMEDIA_TYPE_VIDEO;
+	}
+
 protected:
 	int setSinkFilter(const FCFilterParameters &params) override;
 };

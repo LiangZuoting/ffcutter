@@ -50,9 +50,12 @@ void FCEditWidget::setCurrentStream(int streamIndex)
 	ui.widthEdit->setText(QString::number(stream->codecpar->width));
 	ui.heightEdit->setText(QString::number(stream->codecpar->height));
 	ui.fpsEdit->setText(QString::number(stream->avg_frame_rate.num / stream->avg_frame_rate.den));
-	double msecs = (double)stream->duration * stream->time_base.num / stream->time_base.den * 1000;
-	QTime t = QTime(0,0).addMSecs(msecs);
-	ui.durationSecEdit->setTime(t);
+	if (stream->duration >= 0)
+	{
+		double msecs = (double)stream->duration * stream->time_base.num / stream->time_base.den * 1000;
+		QTime t = QTime(0, 0).addMSecs(msecs);
+		ui.durationSecEdit->setTime(t);
+	}
 }
 
 void FCEditWidget::setStartSec(double startSec)
@@ -75,6 +78,8 @@ void FCEditWidget::onFastSeekClicked()
 void FCEditWidget::onSaveClicked()
 {
 	auto stream = _service->stream(_streamIndex);
+	auto aStreamIndex = ui.audioComboBox->currentData().toInt();
+	auto aStream = _service->stream(aStreamIndex);
 	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
 	{
 		auto filePath = QFileDialog::getSaveFileName(this, tr("保存文件"), QString());
@@ -85,13 +90,23 @@ void FCEditWidget::onSaveClicked()
 			muxEntry.startSec = FCUtil::durationSecs(QTime(0,0), ui.startSecEdit->time());
 			muxEntry.durationSec = FCUtil::durationSecs(QTime(0,0), ui.durationSecEdit->time());
 			muxEntry.vStreamIndex = _streamIndex;
-			muxEntry.aStreamIndex = ui.audioComboBox->currentData().toInt();
+			muxEntry.pixelFormat = (AVPixelFormat)stream->codecpar->format;
+			muxEntry.vBitrate = stream->codecpar->bit_rate;
+			muxEntry.aStreamIndex = aStreamIndex;
+			if (aStream)
+			{
+				muxEntry.sampleFormat = (AVSampleFormat)aStream->codecpar->format;
+				muxEntry.aBitrate = aStream->codecpar->bit_rate;
+				muxEntry.sampleRate = aStream->codecpar->sample_rate;
+				muxEntry.channel_layout = aStream->codecpar->channel_layout;
+				muxEntry.channels = aStream->codecpar->channels;
+			}
 
-			QString filters;
-			makeScaleFilter(filters, muxEntry, stream);
-			makeFpsFilter(filters, muxEntry, stream);
-			makeTextFilter(filters);
-			muxEntry.vfilterString = filters;
+			QString vFilters;
+			makeScaleFilter(vFilters, muxEntry, stream);
+			makeFpsFilter(vFilters, muxEntry, stream);
+			makeTextFilter(vFilters);
+			muxEntry.vfilterString = vFilters;
 			_service->saveAsync(muxEntry);
 			_loadingDialog.exec2(tr(u8"保存..."));
 		}

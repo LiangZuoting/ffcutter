@@ -30,12 +30,15 @@ public:
 	int writeVideo(AVFrame *frame);
 	int writeVideos(const QList<AVFrame *> &frames);
 	int writeAudio(AVFrame *frame);
+	int writeAudios(const QList<AVFrame*>& frames);
 
 	int writeTrailer();
 
 	AVStream *audioStream() const;
 	AVStream *videoStream() const;
 	AVPixelFormat videoFormat() const;
+
+	int fixedAudioFrameSize() const;
 
 	void destroy();
 
