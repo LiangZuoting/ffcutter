@@ -66,7 +66,7 @@ Q_SIGNALS:
     void fileOpened(QList<AVStream *>);
     void frameDeocded(QList<FCFrame>);
     void decodeFinished();
-    void scaleFinished(QPixmap);
+    void scaleFinished(AVFrame *src, QPixmap scaled);
     void seekFinished(int streamIndex);
     void saveFinished();
 

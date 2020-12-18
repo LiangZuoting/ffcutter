@@ -22,7 +22,6 @@ void FCMainWidget::openFile(const QString& filePath)
 
 	_service.reset(new FCService());
 	connect(_service.data(), SIGNAL(fileOpened(QList<AVStream *>)), this, SLOT(onFileOpened(QList<AVStream *>)));
-	connect(_service.data(), SIGNAL(saveFinished()), this, SLOT(onSaveFinished()));
 	connect(_service.data(), SIGNAL(errorOcurred()), this, SLOT(onErrorOcurred()));
 	_service->openFileAsync(filePath);
 	_loadingDialog.exec2(tr(u8"打开文件..."));
@@ -99,11 +98,6 @@ void FCMainWidget::onVideoFrameSelectionChanged()
 	{
 		_opWidget->setStartSec(_vTimelineWidget->selectedSec());
 	}
-}
-
-void FCMainWidget::onSaveFinished()
-{
-	_loadingDialog.accept();
 }
 
 void FCMainWidget::onErrorOcurred()

@@ -28,6 +28,8 @@ void FCEditWidget::setService(const QSharedPointer<FCService> &service)
 {
 	_service = service;
 	connect(_service.data(), SIGNAL(seekFinished(int)), this, SLOT(onSeekFinished(int)));
+	connect(_service.data(), SIGNAL(saveFinished()), this, SLOT(onSaveFinished()));
+	connect(_service.data(), SIGNAL(errorOcurred()), this, SLOT(onErrorOcurred()));
 
 	auto streams = _service->streams();
 	ui.audioComboBox->addItem(tr(u8"√ª”–“Ù∆µ"), -1);
@@ -107,6 +109,16 @@ void FCEditWidget::onSeekFinished(int streamIndex)
 {
 	_loadingDialog.close();
 	emit seekFinished(streamIndex);
+}
+
+void FCEditWidget::onSaveFinished()
+{
+	_loadingDialog.accept();
+}
+
+void FCEditWidget::onErrorOcurred()
+{
+	_loadingDialog.close();
 }
 
 void FCEditWidget::loadFontSize()

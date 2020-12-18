@@ -27,6 +27,8 @@ private Q_SLOTS:
 	void onSaveClicked();
 	void onTextColorClicked();
 	void onSeekFinished(int streamIndex);
+	void onSaveFinished();
+	void onErrorOcurred();
 
 private:
 	void setService(const QSharedPointer<FCService> &service);

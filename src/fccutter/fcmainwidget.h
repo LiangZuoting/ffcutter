@@ -28,7 +28,6 @@ private Q_SLOTS:
 	void onFileOpened(QList<AVStream *> streams);
 	void selectStreamItem(int streamIndex);
 	void onVideoFrameSelectionChanged();
-	void onSaveFinished();
 	void onErrorOcurred();
 	void onSeekFinished(int streamIndex);
 

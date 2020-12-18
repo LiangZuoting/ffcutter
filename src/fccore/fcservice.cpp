@@ -149,7 +149,7 @@ void FCService::scaleAsync(AVFrame *frame, int destWidth, int destHeight)
 				memcpy(image.scanLine(i), scaleResult.first[0] + i * scaleResult.second[0], destWidth * (image.depth() / 8));
 			}
 		}
-		emit scaleFinished(QPixmap::fromImage(image));
+		emit scaleFinished(frame, QPixmap::fromImage(image));
 		});
 }
 

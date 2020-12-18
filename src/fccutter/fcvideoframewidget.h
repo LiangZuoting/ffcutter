@@ -33,7 +33,7 @@ Q_SIGNALS:
 	void doubleClicked();
 
 private Q_SLOTS:
-	void onScaleFinished(QPixmap pixmap);
+	void onScaleFinished(AVFrame *src, QPixmap scaled);
 
 private:
 	Ui::FCVideoFrameWidget ui;
