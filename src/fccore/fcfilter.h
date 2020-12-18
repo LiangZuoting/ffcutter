@@ -7,17 +7,25 @@ extern "C"
 }
 #include "fcconst.h"
 
+struct FCFilterParameters
+{
+	AVRational srcTimeBase = { 0 };
+	QString filterString;
+};
+
 class FCFilter
 {
 public:
-	~FCFilter();
+	virtual ~FCFilter();
 
-	int create(int srcWidth, int srcHeight, AVPixelFormat srcPixelFormat, const AVRational& srcTimeBase, const AVRational& srcSampleAspectRatio, const char *filters, AVPixelFormat dstPixelFormat);
-	FCFilterResult filter(AVFrame* frame);
-	void destroy();
+	virtual int create(const FCFilterParameters &params) = 0;
+	virtual FCFilterResult filter(AVFrame* frame);
+	virtual void destroy();
 
-private:
-	FCFilterResult flush();
+protected:
+	virtual int create(const FCFilterParameters &params, const AVFilter *srcFilter, const char *args, const AVFilter *sinkFilter);
+	virtual int setSinkFilter(const FCFilterParameters &params) = 0;
+	virtual FCFilterResult flush();
 
 	AVFilterGraph *_graph = nullptr;
 	AVFilterContext *_srcContext = nullptr;

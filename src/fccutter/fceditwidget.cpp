@@ -91,7 +91,7 @@ void FCEditWidget::onSaveClicked()
 			makeScaleFilter(filters, muxEntry, stream);
 			makeFpsFilter(filters, muxEntry, stream);
 			makeTextFilter(filters);
-			muxEntry.filterString = filters;
+			muxEntry.vfilterString = filters;
 			_service->saveAsync(muxEntry);
 			_loadingDialog.exec2(tr(u8"±£´æ..."));
 		}

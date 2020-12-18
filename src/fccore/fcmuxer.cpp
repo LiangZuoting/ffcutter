@@ -151,12 +151,24 @@ int FCMuxer::createVideoCodec(const FCMuxEntry& muxEntry)
 			auto videoCodec = avcodec_find_encoder(codecId);
 			_videoCodec = avcodec_alloc_context3(videoCodec);
 			_videoCodec->time_base = { 1, muxEntry.fps };
+			_videoCodec->bit_rate = muxEntry.vBitrate;
 			_videoCodec->width = muxEntry.width;
 			_videoCodec->height = muxEntry.height;
-			_videoCodec->gop_size = 12;
-			if (auto fmt = videoCodec->pix_fmts[0]; fmt != AV_PIX_FMT_NONE)
+			_videoCodec->gop_size = muxEntry.gop;
+			// 请求的格式优先，不支持时用第一个
+			_videoCodec->pix_fmt = videoCodec->pix_fmts[0];
+			for (int i = 0; ; ++i)
 			{
-				_videoCodec->pix_fmt = fmt;
+				auto fmt = videoCodec->pix_fmts[i];
+				if (fmt == AV_PIX_FMT_NONE)
+				{
+					break;
+				}
+				if (fmt == muxEntry.pixelFormat)
+				{
+					_videoCodec->pix_fmt = fmt;
+					break;
+				}
 			}
 			_videoCodec->framerate = { 1, muxEntry.fps };
 			/*
@@ -200,11 +212,37 @@ int FCMuxer::createAudioCodec(const FCMuxEntry &muxEntry)
 	{
 		AVCodec *audioCodec = avcodec_find_encoder(_formatContext->oformat->audio_codec);
 		_audioCodec = avcodec_alloc_context3(audioCodec);
-		_audioCodec->bit_rate = 127802;
-		_audioCodec->sample_fmt = AV_SAMPLE_FMT_FLTP;
-		_audioCodec->sample_rate = 44100;
-		_audioCodec->channels = 2;
-		_audioCodec->channel_layout = 3;
+		_audioCodec->bit_rate = muxEntry.aBitrate;
+		_audioCodec->sample_fmt = audioCodec->sample_fmts[0];
+		for (int i = 0; ; ++i)
+		{
+			auto fmt = audioCodec->sample_fmts[i];
+			if (fmt == AV_SAMPLE_FMT_NONE)
+			{
+				break;
+			}
+			if (fmt == muxEntry.sampleFormat)
+			{
+				_audioCodec->sample_fmt = fmt;
+				break;
+			}
+		}
+		_audioCodec->sample_rate = muxEntry.sampleRate;
+		_audioCodec->channel_layout = muxEntry.channel_layout;
+		for (int i = 0; ; ++i)
+		{
+			auto layout = audioCodec->channel_layouts[i];
+			if (layout == -1)
+			{
+				break;
+			}
+			if (layout == muxEntry.channel_layout)
+			{
+				_audioCodec->channel_layout = layout;
+				break;
+			}
+		}
+		_audioCodec->channels = av_get_channel_layout_nb_channels(_audioCodec->channel_layout);
 		if (_formatContext->oformat->flags & AVFMT_GLOBALHEADER)
 		{
 			_audioCodec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;

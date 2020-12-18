@@ -12,72 +12,6 @@ FCFilter::~FCFilter()
 	destroy();
 }
 
-int FCFilter::create(int srcWidth, int srcHeight, AVPixelFormat srcPixelFormat, const AVRational &srcTimeBase, const AVRational &srcSampleAspectRatio, const char *filters, AVPixelFormat dstPixelFormat)
-{
-	const AVFilter *srcFilter = avfilter_get_by_name("buffer");
-	const AVFilter *sinkFilter = avfilter_get_by_name("buffersink");
-	_inputs = avfilter_inout_alloc();
-	_outputs = avfilter_inout_alloc();
-	_graph = avfilter_graph_alloc();
-	if (!_inputs || !_outputs || !_graph)
-	{
-		return AVERROR(ENOMEM);
-	}
-	auto args = QString("width=%1:height=%2:pix_fmt=%3:time_base=%4/%5:pixel_aspect=%6/%7")
-			.arg(srcWidth).arg(srcHeight).arg(srcPixelFormat).arg(srcTimeBase.num)
-			.arg(srcTimeBase.den).arg(srcSampleAspectRatio.num).arg(srcSampleAspectRatio.den).toStdString();
-	int ret = 0;
-	do 
-	{
-		ret = avfilter_graph_create_filter(&_srcContext, srcFilter, "in", args.data(), nullptr, _graph);
-		if (ret < 0)
-		{
-			FCUtil::printAVError(ret, "avfilter_graph_create_filter");
-			break;
-		}
-		ret = avfilter_graph_create_filter(&_sinkContext, sinkFilter, "out", nullptr, nullptr, _graph);
-		if (ret < 0)
-		{
-			FCUtil::printAVError(ret, "avfilter_graph_create_filter");
-			break;
-		}
-		AVPixelFormat pix_fmts[] = { dstPixelFormat, AV_PIX_FMT_NONE };
-		ret = av_opt_set_int_list(_sinkContext, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
-		if (ret < 0)
-		{
-			FCUtil::printAVError(ret, "av_opt_set_int_list");
-			break;
-		}
-		_inputs->name = av_strdup("out");
-		_inputs->filter_ctx = _sinkContext;
-		_inputs->pad_idx = 0;
-		_inputs->next = nullptr;
-		_outputs->name = av_strdup("in");
-		_outputs->filter_ctx = _srcContext;
-		_outputs->pad_idx = 0;
-		_outputs->next = nullptr;
-		ret = avfilter_graph_parse_ptr(_graph, filters, &_inputs, &_outputs, nullptr);
-		if (ret < 0)
-		{
-			FCUtil::printAVError(ret, "avfilter_graph_parse_ptr");
-			break;
-		}
-		ret = avfilter_graph_config(_graph, nullptr);
-		if (ret < 0)
-		{
-			FCUtil::printAVError(ret, "avfilter_graph_config");
-			break;
-		}
-	} while (0);
-#if DEBUG
-	if (_graph)
-	{
-		FCUtil::printAVFilterGraph("d:\\fcfilter.txt", _graph);
-	}
-#endif
-	return ret;
-}
-
 FCFilterResult FCFilter::filter(AVFrame *frame)
 {
 	if (!frame)
@@ -159,4 +93,58 @@ void FCFilter::destroy()
 		_sinkContext = nullptr;
 	}
 	avfilter_graph_free(&_graph);
+}
+
+int FCFilter::create(const FCFilterParameters &params, const AVFilter *srcFilter, const char *args, const AVFilter *sinkFilter)
+{
+	_inputs = avfilter_inout_alloc();
+	_outputs = avfilter_inout_alloc();
+	_graph = avfilter_graph_alloc();
+	if (!_inputs || !_outputs || !_graph)
+	{
+		return AVERROR(ENOMEM);
+	}
+	int ret = 0;
+	do
+	{
+		ret = avfilter_graph_create_filter(&_srcContext, srcFilter, "in", args, nullptr, _graph);
+		if (ret < 0)
+		{
+			FCUtil::printAVError(ret, "avfilter_graph_create_filter");
+			break;
+		}
+		ret = avfilter_graph_create_filter(&_sinkContext, sinkFilter, "out", nullptr, nullptr, _graph);
+		if (ret < 0)
+		{
+			FCUtil::printAVError(ret, "avfilter_graph_create_filter");
+			break;
+		}
+		ret = setSinkFilter(params);
+		if (ret < 0)
+		{
+			break;
+		}
+		_inputs->name = av_strdup("out");
+		_inputs->filter_ctx = _sinkContext;
+		_inputs->pad_idx = 0;
+		_inputs->next = nullptr;
+		_outputs->name = av_strdup("in");
+		_outputs->filter_ctx = _srcContext;
+		_outputs->pad_idx = 0;
+		_outputs->next = nullptr;
+		auto strFilter = params.filterString.toStdString();
+		ret = avfilter_graph_parse_ptr(_graph, strFilter.data(), &_inputs, &_outputs, nullptr);
+		if (ret < 0)
+		{
+			FCUtil::printAVError(ret, "avfilter_graph_parse_ptr");
+			break;
+		}
+		ret = avfilter_graph_config(_graph, nullptr);
+		if (ret < 0)
+		{
+			FCUtil::printAVError(ret, "avfilter_graph_config");
+			break;
+		}
+	} while (0);
+	return ret;
 }

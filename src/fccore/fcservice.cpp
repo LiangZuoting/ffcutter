@@ -3,6 +3,7 @@
 #include <QImage>
 #include "fcutil.h"
 #include "fcmuxer.h"
+#include "fcvideofilter.h"
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -192,7 +193,7 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 			return;
 		}
 
-		auto videoFilter = createVideoFilter(demuxVideoStream, entry.filterString, muxer.videoFormat());
+		auto videoFilter = createVideoFilter(demuxVideoStream, entry.vfilterString, muxer.videoFormat());
 		if (_lastError < 0)
 		{
 			emit errorOcurred();
@@ -361,13 +362,20 @@ void FCService::clearFrames(QList<FCFrame> &frames)
 
 QSharedPointer<FCFilter> FCService::createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat)
 {
-	QSharedPointer<FCFilter> filter(new FCFilter());
+	QSharedPointer<FCFilter> filter(new FCVideoFilter());
 	if (!filters.isEmpty())
 	{
 		filters.append(',');
 	}
 	filters.append("format=").append(av_get_pix_fmt_name(dstPixelFormat));
-	auto strFilter = filters.toStdString();
-	_lastError = filter->create(srcStream->codecpar->width, srcStream->codecpar->height, (AVPixelFormat)srcStream->codecpar->format, srcStream->time_base, srcStream->sample_aspect_ratio, strFilter.data(), dstPixelFormat);
+	FCVideoFilterParameters params{};
+	params.srcWidth = srcStream->codecpar->width;
+	params.srcHeight = srcStream->codecpar->height;
+	params.srcPixelFormat = (AVPixelFormat)srcStream->codecpar->format;
+	params.srcSampleAspectRatio = srcStream->sample_aspect_ratio;
+	params.dstPixelFormat = dstPixelFormat;
+	params.srcTimeBase = srcStream->time_base;
+	params.filterString = filters;
+	_lastError = filter->create(params);
 	return filter;
 }
