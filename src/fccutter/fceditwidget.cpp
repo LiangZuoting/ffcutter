@@ -16,6 +16,7 @@ FCEditWidget::FCEditWidget(const QSharedPointer<FCService> &service, FCMainWidge
 	connect(ui.exactSeekBtn, SIGNAL(clicked()), this, SLOT(onExactSeekClicked()));
 	connect(ui.saveBtn, SIGNAL(clicked()), this, SLOT(onSaveClicked()));
 	connect(ui.textColorBtn, SIGNAL(clicked()), this, SLOT(onTextColorClicked()));
+	connect(ui.subtitleBtn, SIGNAL(clicked()), this, SLOT(onSubtitleBtnClicked()));
 
 	loadFontSize();
 	loadFonts();
@@ -118,6 +119,7 @@ void FCEditWidget::onSaveClicked()
 			makeScaleFilter(vFilters, muxEntry, stream);
 			makeFpsFilter(vFilters, muxEntry, stream);
 			makeTextFilter(vFilters);
+			makeSubtitleFilter(vFilters);
 			muxEntry.vfilterString = vFilters;
 			_service->saveAsync(muxEntry);
 			_loadingDialog.exec2(tr(u8"±£´æ..."));
@@ -130,6 +132,15 @@ void FCEditWidget::onTextColorClicked()
 	auto color = QColorDialog::getColor(QColor(ui.textColorBtn->text()));
 	ui.textColorBtn->setStyleSheet("background: " + color.name());
 	ui.textColorBtn->setText(color.name());
+}
+
+void FCEditWidget::onSubtitleBtnClicked()
+{
+	QString srtFile = QFileDialog::getOpenFileName(this, tr("choose srt file"), QString(), "×ÖÄ»ÎÄ¼þ (*.srt)");
+	if (!srtFile.isEmpty())
+	{
+		ui.subtitleEdit->setText(srtFile);
+	}
 }
 
 void FCEditWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames)
@@ -231,6 +242,17 @@ void FCEditWidget::makeTextFilter(QString &filters)
 		appendFilter(filters, QString("drawtext=fontfile=%1:fontsize=%2:fontcolor=%3:text=\'%4\':x=%5:y=%6")
 			.arg(fontFile).arg(fontSize).arg(fontColor.name()).arg(text).arg(x).arg(y));
 	}
+}
+
+void FCEditWidget::makeSubtitleFilter(QString& filters)
+{
+	auto srtFile = ui.subtitleEdit->text();
+	if (srtFile.isEmpty())
+	{
+		return;
+	}
+	srtFile = srtFile.replace(':', "\\\\:");
+	appendFilter(filters, QString("subtitles=filename=%1").arg(srtFile));
 }
 
 void FCEditWidget::appendFilter(QString &filters, const QString &newFilter)

@@ -27,6 +27,7 @@ private Q_SLOTS:
 	void onExactSeekClicked();
 	void onSaveClicked();
 	void onTextColorClicked();
+	void onSubtitleBtnClicked();
 	void onSeekFinished(int streamIndex, QList<FCFrame> frames);
 	void onSaveFinished();
 	void onErrorOcurred();
@@ -38,6 +39,7 @@ private:
 	void makeScaleFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);
 	void makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);
 	void makeTextFilter(QString &filters);
+	void makeSubtitleFilter(QString& filters);
 	void appendFilter(QString &filters, const QString &newFilter);
 
 	Ui::FCEditWidget ui;
