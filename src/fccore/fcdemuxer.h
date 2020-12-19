@@ -33,7 +33,7 @@ public:
 	/// <param name="streamIndex"></param>
 	/// <param name="timestamp"></param>
 	/// <returns></returns>
-	int exactSeek(int streamIndex, int64_t timestamp);
+	FCDecodeResult exactSeek(int streamIndex, int64_t timestamp);
 	/// <summary>
 	/// ½âÂëÏÂÒ»Ö¡
 	/// </summary>

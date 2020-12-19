@@ -52,7 +52,7 @@ void FCMainWidget::onFileOpened(QList<AVStream *> streams)
 {
 	_opWidget = new FCEditWidget(_service, this);
 	ui.layout->addWidget(_opWidget);
-	connect(_opWidget, SIGNAL(seekFinished(int)), this, SLOT(onSeekFinished(int)));
+	connect(_opWidget, SIGNAL(seekFinished(int, QList<FCFrame>)), this, SLOT(onSeekFinished(int, QList<FCFrame>)));
 
 	_fiWidget = new FCFileInfoWidget(this);
 	ui.layout->addWidget(_fiWidget);
@@ -88,6 +88,7 @@ void FCMainWidget::selectStreamItem(int streamIndex)
 		ui.layout->addWidget(_vTimelineWidget);
 		_vTimelineWidget->setStreamIndex(streamIndex);
 		_vTimelineWidget->setService(_service);
+		_vTimelineWidget->clear();
 		_vTimelineWidget->decodeOnce();
 	}
 }
@@ -105,10 +106,12 @@ void FCMainWidget::onErrorOcurred()
 	_loadingDialog.close();
 }
 
-void FCMainWidget::onSeekFinished(int streamIndex)
+void FCMainWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames)
 {
 	if (_vTimelineWidget->streamIndex() == streamIndex)
 	{
+		_vTimelineWidget->clear();
+		_vTimelineWidget->appendFrames(frames);
 		_vTimelineWidget->decodeOnce();
 	}
 }

@@ -120,18 +120,36 @@ QList<AVStream*> FCService::streams() const
 	return _demuxer->streams();
 }
 
-void FCService::seekAsync(int streamIndex, double seconds)
+void FCService::fastSeekAsync(int streamIndex, double seconds)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
-		if (_demuxer->fastSeek(streamIndex, _demuxer->secToTs(streamIndex, seconds)) < 0)
+		if ((_lastError = _demuxer->fastSeek(streamIndex, _demuxer->secToTs(streamIndex, seconds))) < 0)
 		{
 			emit errorOcurred();
 		}
 		else
 		{
-			emit seekFinished(streamIndex);
+			emit seekFinished(streamIndex, QList<FCFrame>());
+		}
+		});
+}
+
+void FCService::exactSeekAsync(int streamIndex, double seconds)
+{
+	QMutexLocker _(&_mutex);
+	QtConcurrent::run(_threadPool, [=]() {
+		QMutexLocker _(&_mutex);
+		auto [err, frames] = _demuxer->exactSeek(streamIndex, _demuxer->secToTs(streamIndex, seconds));
+		_lastError = err;
+		if ( _lastError < 0 && _lastError != AVERROR_EOF)
+		{
+			emit errorOcurred();
+		}
+		else
+		{
+			emit seekFinished(streamIndex, frames);
 		}
 		});
 }

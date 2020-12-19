@@ -28,10 +28,15 @@ public:
 
 	double selectedSec() const;
 
+	void appendFrames(const QList<FCFrame> &frames);
+
+	void clear();
+
 public Q_SLOTS:
 	void decodeOnce();
 
 private Q_SLOTS:
+	void onForwardBtnClicked();
 	void onFrameDecoded(QList<FCFrame> frames);
 	void onDecodeFinished();
 	void onVideoFrameClicked();
@@ -40,8 +45,6 @@ Q_SIGNALS:
 	void selectionChanged();
 
 private:
-	void clear();
-
 	inline static const int MAX_LIST_SIZE = 20;
 
 	Ui::FCVideoTimelineWidget ui;

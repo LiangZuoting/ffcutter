@@ -6,7 +6,7 @@ FCVideoTimelineWidget::FCVideoTimelineWidget(QWidget *parent)
 {
 	ui.setupUi(this);
 
-	connect(ui.forwardBtn, SIGNAL(clicked()), this, SLOT(decodeOnce()));
+	connect(ui.forwardBtn, SIGNAL(clicked()), this, SLOT(onForwardBtnClicked()));
 }
 
 FCVideoTimelineWidget::~FCVideoTimelineWidget()
@@ -27,7 +27,6 @@ void FCVideoTimelineWidget::setService(const QSharedPointer<FCService>& service)
 
 void FCVideoTimelineWidget::decodeOnce()
 {
-	clear();
 	_service->decodePacketsAsync(_streamIndex, MAX_LIST_SIZE);
 	_loadingDialog.exec2(tr(u8"½âÂë..."));
 }
@@ -41,6 +40,28 @@ double FCVideoTimelineWidget::selectedSec() const
 	return 0;
 }
 
+void FCVideoTimelineWidget::appendFrames(const QList<FCFrame>& frames)
+{
+	for (auto frame : frames)
+	{
+		if (_streamIndex == frame.streamIndex)
+		{
+			FCVideoFrameWidget* widget = new FCVideoFrameWidget(this);
+			connect(widget, SIGNAL(doubleClicked()), SLOT(onVideoFrameClicked()));
+			ui.timelineLayout->addWidget(widget);
+			widget->setService(_service);
+			widget->setStreamIndex(_streamIndex);
+			widget->setFrame(frame.frame);
+		}
+	}
+}
+
+void FCVideoTimelineWidget::onForwardBtnClicked()
+{
+	clear();
+	decodeOnce();
+}
+
 void FCVideoTimelineWidget::onFrameDecoded(QList<FCFrame> frames)
 {
 	if (auto [err, des] = _service->lastError(); err < 0)
@@ -49,18 +70,7 @@ void FCVideoTimelineWidget::onFrameDecoded(QList<FCFrame> frames)
 	}
 	else
 	{
-		for (auto frame : frames)
-		{
-			if (_streamIndex == frame.streamIndex)
-			{
-				FCVideoFrameWidget *widget = new FCVideoFrameWidget(this);
-				connect(widget, SIGNAL(doubleClicked()), SLOT(onVideoFrameClicked()));
-				ui.timelineLayout->addWidget(widget);
-				widget->setService(_service);
-				widget->setStreamIndex(_streamIndex);
-				widget->setFrame(frame.frame);
-			}
-		}
+		appendFrames(frames);
 	}
 }
 

@@ -29,7 +29,7 @@ private Q_SLOTS:
 	void selectStreamItem(int streamIndex);
 	void onVideoFrameSelectionChanged();
 	void onErrorOcurred();
-	void onSeekFinished(int streamIndex);
+	void onSeekFinished(int streamIndex, QList<FCFrame> frames);
 
 private:
 	Ui::FCMainWidget ui;

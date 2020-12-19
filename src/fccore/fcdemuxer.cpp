@@ -49,9 +49,39 @@ int FCDemuxer::fastSeek(int streamIndex, int64_t timestamp)
 	return ret;
 }
 
-int FCDemuxer::exactSeek(int streamIndex, int64_t timestamp)
+FCDecodeResult FCDemuxer::exactSeek(int streamIndex, int64_t timestamp)
 {
-	return 0;
+	int ret = fastSeek(streamIndex, timestamp);
+	QList<FCFrame> resultFrames;
+	if (ret < 0)
+	{
+		return {ret, resultFrames};
+	}
+	while (resultFrames.isEmpty())
+	{
+		auto [err, frames] = decodeNextPacket({ streamIndex });
+		if (ret = err, ret < 0)
+		{
+			break;
+		}
+		while (!frames.isEmpty())
+		{
+			auto &frame = frames.front();
+			auto pts = frame.frame->pts;
+			if (pts == AV_NOPTS_VALUE)
+			{
+				pts = frame.frame->pkt_dts;
+			}
+			if (pts >= timestamp)
+			{
+				resultFrames = frames;
+				break;
+			}
+			av_frame_free(&frame.frame);
+			frames.pop_front();
+		}
+	}
+	return { ret, resultFrames };
 }
 
 FCDecodeResult FCDemuxer::decodeNextPacket(const QVector<int>& streamFilter)

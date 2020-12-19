@@ -13,6 +13,7 @@ FCEditWidget::FCEditWidget(const QSharedPointer<FCService> &service, FCMainWidge
 	setService(service);
 
 	connect(ui.fastSeekBtn, SIGNAL(clicked()), this, SLOT(onFastSeekClicked()));
+	connect(ui.exactSeekBtn, SIGNAL(clicked()), this, SLOT(onExactSeekClicked()));
 	connect(ui.saveBtn, SIGNAL(clicked()), this, SLOT(onSaveClicked()));
 	connect(ui.textColorBtn, SIGNAL(clicked()), this, SLOT(onTextColorClicked()));
 
@@ -27,7 +28,7 @@ FCEditWidget::~FCEditWidget()
 void FCEditWidget::setService(const QSharedPointer<FCService> &service)
 {
 	_service = service;
-	connect(_service.data(), SIGNAL(seekFinished(int)), this, SLOT(onSeekFinished(int)));
+	connect(_service.data(), SIGNAL(seekFinished(int, QList<FCFrame>)), this, SLOT(onSeekFinished(int, QList<FCFrame>)));
 	connect(_service.data(), SIGNAL(saveFinished()), this, SLOT(onSaveFinished()));
 	connect(_service.data(), SIGNAL(errorOcurred()), this, SLOT(onErrorOcurred()));
 
@@ -71,7 +72,18 @@ void FCEditWidget::onFastSeekClicked()
 		return;
 	}
 
-	_service->seekAsync(_streamIndex, FCUtil::durationSecs(QTime(0,0), ui.seekEdit->time()));
+	_service->fastSeekAsync(_streamIndex, FCUtil::durationSecs(QTime(0,0), ui.seekEdit->time()));
+	_loadingDialog.exec2(tr(u8"Ìø×ª..."));
+}
+
+void FCEditWidget::onExactSeekClicked()
+{
+	if (_streamIndex < 0)
+	{
+		return;
+	}
+
+	_service->exactSeekAsync(_streamIndex, FCUtil::durationSecs(QTime(0, 0), ui.seekEdit->time()));
 	_loadingDialog.exec2(tr(u8"Ìø×ª..."));
 }
 
@@ -120,10 +132,10 @@ void FCEditWidget::onTextColorClicked()
 	ui.textColorBtn->setText(color.name());
 }
 
-void FCEditWidget::onSeekFinished(int streamIndex)
+void FCEditWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames)
 {
 	_loadingDialog.close();
-	emit seekFinished(streamIndex);
+	emit seekFinished(streamIndex, frames);
 }
 
 void FCEditWidget::onSaveFinished()

@@ -33,6 +33,9 @@
     <ClCompile Include="..\src\fccore\fcutil.cpp" />
     <ClCompile Include="..\src\fccore\fcvideofilter.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CDF96F2C-B0D2-4D27-B22E-49C321B8110D}</ProjectGuid>
     <Keyword>QtVS_v303</Keyword>

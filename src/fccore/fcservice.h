@@ -44,7 +44,8 @@ public:
     AVStream* stream(int streamIndex) const;
     QList<AVStream*> streams() const;
 
-    void seekAsync(int streamIndex, double seconds);
+    void fastSeekAsync(int streamIndex, double seconds);
+    void exactSeekAsync(int streamIndex, double seconds);
     /// <summary>
     /// 将视频 frame 缩放到指定分辨率，并转换成 RGB24 格式的 Pixmap
     /// </summary>
@@ -68,7 +69,7 @@ Q_SIGNALS:
     void frameDeocded(QList<FCFrame>);
     void decodeFinished();
     void scaleFinished(AVFrame *src, QPixmap scaled);
-    void seekFinished(int streamIndex);
+    void seekFinished(int streamIndex, QList<FCFrame> frames);
     void saveFinished();
 
 private:

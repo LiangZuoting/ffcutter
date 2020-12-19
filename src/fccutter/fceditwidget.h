@@ -20,13 +20,14 @@ public:
 	void setStartSec(double startSec);
 
 Q_SIGNALS:
-	void seekFinished(int streamIndex);
+	void seekFinished(int streamIndex, QList<FCFrame> frames);
 
 private Q_SLOTS:
 	void onFastSeekClicked();
+	void onExactSeekClicked();
 	void onSaveClicked();
 	void onTextColorClicked();
-	void onSeekFinished(int streamIndex);
+	void onSeekFinished(int streamIndex, QList<FCFrame> frames);
 	void onSaveFinished();
 	void onErrorOcurred();
 
