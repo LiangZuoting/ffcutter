@@ -219,11 +219,15 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 			emit errorOcurred();
 			return;
 		}
-		auto audioFilter = createAudioFilter(demuxAudioStream, entry.aFilterString, dstAudioStream, muxer.fixedAudioFrameSize());
-		if (_lastError < 0)
+		QSharedPointer<FCFilter> audioFilter;
+		if (demuxAudioStream)
 		{
-			emit errorOcurred();
-			return;
+			audioFilter = createAudioFilter(demuxAudioStream, entry.aFilterString, dstAudioStream, muxer.fixedAudioFrameSize());
+			if (_lastError < 0)
+			{
+				emit errorOcurred();
+				return;
+			}
 		}
 
 		bool ending = false;
@@ -261,14 +265,14 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 
 				if (entry.vStreamIndex == decodedFrame.streamIndex)
 				{
-					if (!filterAndMuxFrame(videoFilter, muxer, decodedFrame.frame))
+					if (!filterAndMuxFrame(videoFilter, muxer, decodedFrame.frame, AVMEDIA_TYPE_VIDEO))
 					{
 						break;
 					}
 				}
 				else if (entry.aStreamIndex == decodedFrame.streamIndex)
 				{
-					if (!filterAndMuxFrame(audioFilter, muxer, decodedFrame.frame))
+					if (!filterAndMuxFrame(audioFilter, muxer, decodedFrame.frame, AVMEDIA_TYPE_AUDIO))
 					{
 						break;
 					}
@@ -427,26 +431,31 @@ QSharedPointer<FCFilter> FCService::createAudioFilter(const AVStream* srcStream,
 	return filter;
 }
 
-bool FCService::filterAndMuxFrame(QSharedPointer<FCFilter>& filter, FCMuxer& muxer, AVFrame* frame)
+bool FCService::filterAndMuxFrame(QSharedPointer<FCFilter>& filter, FCMuxer& muxer, AVFrame* frame, AVMediaType type)
 {
-	auto [err, filteredFrames] = filter->filter(frame);
-	if (_lastError = err; _lastError < 0)
+	QList<AVFrame*> frames;
+	if (filter)
 	{
-		clearFrames(filteredFrames);
-		return false;
+		auto [err, filteredFrames] = filter->filter(frame);
+		if (_lastError = err; _lastError < 0)
+		{
+			clearFrames(filteredFrames);
+			return false;
+		}
+		if (!frame) // flush encoder
+		{
+			filteredFrames.push_back(nullptr);
+		}
+		frames = filteredFrames;
 	}
-	if (!frame) // flush encoder
+	if (type == AVMEDIA_TYPE_VIDEO)
 	{
-		filteredFrames.push_back(nullptr);
-	}
-	if (filter->type() == AVMEDIA_TYPE_VIDEO)
-	{
-		_lastError = muxer.writeVideos(filteredFrames);
+		_lastError = muxer.writeVideos(frames);
 	}	
 	else
 	{
-		_lastError = muxer.writeAudios(filteredFrames);
+		_lastError = muxer.writeAudios(frames);
 	}
-	clearFrames(filteredFrames);
+	clearFrames(frames);
 	return _lastError >= 0;
 }
