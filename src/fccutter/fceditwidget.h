@@ -18,6 +18,7 @@ public:
 	void setCurrentStream(int streamIndex);
 
 	void setStartSec(double startSec);
+	void setEndSec(double endInSec);
 
 Q_SIGNALS:
 	void seekFinished(int streamIndex, QList<FCFrame> frames);

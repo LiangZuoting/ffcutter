@@ -31,11 +31,20 @@ void FCVideoTimelineWidget::decodeOnce()
 	_loadingDialog.exec2(tr(u8"½âÂë..."));
 }
 
-double FCVideoTimelineWidget::selectedSec() const
+double FCVideoTimelineWidget::startSec() const
 {
-	if (_selected)
+	if (_startFrame)
 	{
-		return _selected->sec();
+		return _startFrame->sec();
+	}
+	return 0;
+}
+
+double FCVideoTimelineWidget::endSec() const
+{
+	if (_endFrame)
+	{
+		return _endFrame->sec();
 	}
 	return 0;
 }
@@ -47,7 +56,8 @@ void FCVideoTimelineWidget::appendFrames(const QList<FCFrame>& frames)
 		if (_streamIndex == frame.streamIndex)
 		{
 			FCVideoFrameWidget* widget = new FCVideoFrameWidget(this);
-			connect(widget, SIGNAL(doubleClicked()), SLOT(onVideoFrameClicked()));
+			connect(widget, SIGNAL(leftDoubleClicked()), SLOT(onVideoFrameLeftClicked()));
+			connect(widget, SIGNAL(rightDoubleClicked()), SLOT(onVideoFrameRightClicked()));
 			ui.timelineLayout->addWidget(widget);
 			widget->setService(_service);
 			widget->setStreamIndex(_streamIndex);
@@ -79,17 +89,32 @@ void FCVideoTimelineWidget::onDecodeFinished()
 	_loadingDialog.close();
 }
 
-void FCVideoTimelineWidget::onVideoFrameClicked()
+void FCVideoTimelineWidget::onVideoFrameLeftClicked()
 {
 	auto widget = qobject_cast<FCVideoFrameWidget*>(sender());
-	_selected = widget;
-	emit selectionChanged();
+	_startFrame = widget;
+	emit startSelected();
 
 	if (auto children = findChildren<FCVideoFrameWidget*>(); !children.isEmpty())
 	{
 		for (auto c : children)
 		{
-			c->setSelection(c == widget);
+			c->setStart(c == widget);
+		}
+	}
+}
+
+void FCVideoTimelineWidget::onVideoFrameRightClicked()
+{
+	auto widget = qobject_cast<FCVideoFrameWidget *>(sender());
+	_endFrame = widget;
+	emit endSelected();
+
+	if (auto children = findChildren<FCVideoFrameWidget *>(); !children.isEmpty())
+	{
+		for (auto c : children)
+		{
+			c->setEnd(c == widget);
 		}
 	}
 }

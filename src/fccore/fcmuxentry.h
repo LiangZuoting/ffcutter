@@ -12,7 +12,7 @@ struct FCMuxEntry
 {
 	QString filePath;
 	double startSec = 0; // start time in second
-	double durationSec = 0; // duration in second
+	double endSec = 0; // end time in second
 	// video
 	int vStreamIndex = -1;
 	AVPixelFormat pixelFormat = AV_PIX_FMT_NONE;

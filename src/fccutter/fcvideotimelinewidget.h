@@ -26,7 +26,8 @@ public:
 	}
 	void setService(const QSharedPointer<FCService>& service);
 
-	double selectedSec() const;
+	double startSec() const;
+	double endSec() const;
 
 	void appendFrames(const QList<FCFrame> &frames);
 
@@ -39,10 +40,12 @@ private Q_SLOTS:
 	void onForwardBtnClicked();
 	void onFrameDecoded(QList<FCFrame> frames);
 	void onDecodeFinished();
-	void onVideoFrameClicked();
+	void onVideoFrameLeftClicked();
+	void onVideoFrameRightClicked();
 
 Q_SIGNALS:
-	void selectionChanged();
+	void startSelected();
+	void endSelected();
 
 private:
 	inline static const int MAX_LIST_SIZE = 20;
@@ -50,6 +53,7 @@ private:
 	Ui::FCVideoTimelineWidget ui;
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;
-	FCVideoFrameWidget* _selected = nullptr;
+	FCVideoFrameWidget* _startFrame = nullptr;
+	FCVideoFrameWidget *_endFrame = nullptr;
 	FCLoadingDialog _loadingDialog;
 };

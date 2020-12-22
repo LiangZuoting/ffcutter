@@ -180,7 +180,7 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		QMutexLocker _(&_mutex);
 		// 按视频流 seek 到后边的关键帧
 		auto startPts = _demuxer->secToTs(entry.vStreamIndex, entry.startSec);
-		auto endPts = _demuxer->secToTs(entry.vStreamIndex, entry.startSec + entry.durationSec);
+		auto endPts = _demuxer->secToTs(entry.vStreamIndex, entry.endSec);
 		_demuxer->fastSeek(entry.vStreamIndex, startPts);
 
 		AVStream* demuxAudioStream = _demuxer->stream(entry.aStreamIndex);

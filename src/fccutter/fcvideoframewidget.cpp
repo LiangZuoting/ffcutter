@@ -1,4 +1,5 @@
 #include "fcvideoframewidget.h"
+#include <QMouseEvent>
 extern "C"
 {
 #include <libswscale/swscale.h>
@@ -44,9 +45,30 @@ void FCVideoFrameWidget::setFrame(AVFrame* frame)
 	_service->scaleAsync(frame, size.width(), size.height());
 }
 
-void FCVideoFrameWidget::setSelection(bool select)
+void FCVideoFrameWidget::setStart(bool select)
 {
-	setStyleSheet(select ? "color: green;" : "");
+	_isStart = select;
+	if (_isStart && _isEnd)
+	{
+		setStyleSheet("color: yellow;");
+	}
+	else
+	{
+		setStyleSheet(_isStart ? "color: green;" : "");
+	}
+}
+
+void FCVideoFrameWidget::setEnd(bool select)
+{
+	_isEnd = select;
+	if (_isStart && _isEnd)
+	{
+		setStyleSheet("color: yellow;");
+	}
+	else
+	{
+		setStyleSheet(_isEnd ? "color: red;" : "");
+	}
 }
 
 AVFrame* FCVideoFrameWidget::frame() const
@@ -66,8 +88,16 @@ double FCVideoFrameWidget::sec() const
 
 void FCVideoFrameWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
-	setSelection(true);
-	emit doubleClicked();
+	if (event->button() == Qt::LeftButton)
+	{
+		setStart(true);
+		emit leftDoubleClicked();
+	}
+	else if (event->button() == Qt::RightButton)
+	{
+		setEnd(true);
+		emit rightDoubleClicked();
+	}
 	QWidget::mouseDoubleClickEvent(event);
 }
 

@@ -84,7 +84,8 @@ void FCMainWidget::selectStreamItem(int streamIndex)
 		_opWidget->setCurrentStream(_streamIndex);
 
 		_vTimelineWidget = new FCVideoTimelineWidget(this);
-		connect(_vTimelineWidget, SIGNAL(selectionChanged()), this, SLOT(onVideoFrameSelectionChanged()));
+		connect(_vTimelineWidget, SIGNAL(startSelected()), this, SLOT(onStartFrameSelected()));
+		connect(_vTimelineWidget, SIGNAL(endSelected()), this, SLOT(onEndFrameSelected()));
 		ui.layout->addWidget(_vTimelineWidget);
 		_vTimelineWidget->setStreamIndex(streamIndex);
 		_vTimelineWidget->setService(_service);
@@ -93,11 +94,19 @@ void FCMainWidget::selectStreamItem(int streamIndex)
 	}
 }
 
-void FCMainWidget::onVideoFrameSelectionChanged()
+void FCMainWidget::onStartFrameSelected()
 {
 	if (_vTimelineWidget)
 	{
-		_opWidget->setStartSec(_vTimelineWidget->selectedSec());
+		_opWidget->setStartSec(_vTimelineWidget->startSec());
+	}
+}
+
+void FCMainWidget::onEndFrameSelected()
+{
+	if (_vTimelineWidget)
+	{
+		_opWidget->setEndSec(_vTimelineWidget->endSec());
 	}
 }
 

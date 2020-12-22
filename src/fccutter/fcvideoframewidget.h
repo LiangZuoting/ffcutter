@@ -19,8 +19,8 @@ public:
 	void setService(const QSharedPointer<FCService>& service);
 	void setStreamIndex(int streamIndex);
 	void setFrame(AVFrame* frame);
-
-	void setSelection(bool select);
+	void setStart(bool select);
+	void setEnd(bool select);
 
 	AVFrame* frame() const;
 	int64_t pts() const;
@@ -30,7 +30,8 @@ protected:
 	void mouseDoubleClickEvent(QMouseEvent* event);
 
 Q_SIGNALS:
-	void doubleClicked();
+	void leftDoubleClicked();
+	void rightDoubleClicked();
 
 private Q_SLOTS:
 	void onScaleFinished(AVFrame *src, QPixmap scaled);
@@ -40,4 +41,6 @@ private:
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;
 	AVFrame* _frame = nullptr;
+	bool _isStart = false;
+	bool _isEnd = false;
 };

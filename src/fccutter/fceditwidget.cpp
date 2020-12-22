@@ -56,7 +56,7 @@ void FCEditWidget::setCurrentStream(int streamIndex)
 	{
 		double msecs = (double)stream->duration * stream->time_base.num / stream->time_base.den * 1000;
 		QTime t = QTime(0, 0).addMSecs(msecs);
-		ui.durationSecEdit->setTime(t);
+		ui.endSecEdit->setTime(t);
 	}
 }
 
@@ -64,6 +64,12 @@ void FCEditWidget::setStartSec(double startSec)
 {
 	QTime t = QTime(0, 0).addMSecs(startSec * 1000);
 	ui.startSecEdit->setTime(t);
+}
+
+void FCEditWidget::setEndSec(double endInSec)
+{
+	QTime t = QTime(0, 0).addMSecs(endInSec * 1000);
+	ui.endSecEdit->setTime(t);
 }
 
 void FCEditWidget::onFastSeekClicked()
@@ -101,7 +107,7 @@ void FCEditWidget::onSaveClicked()
 			FCMuxEntry muxEntry;
 			muxEntry.filePath = filePath;
 			muxEntry.startSec = FCUtil::durationSecs(QTime(0,0), ui.startSecEdit->time());
-			muxEntry.durationSec = FCUtil::durationSecs(QTime(0,0), ui.durationSecEdit->time());
+			muxEntry.endSec = FCUtil::durationSecs(QTime(0,0), ui.endSecEdit->time());
 			muxEntry.vStreamIndex = _streamIndex;
 			muxEntry.pixelFormat = (AVPixelFormat)stream->codecpar->format;
 			muxEntry.vBitrate = stream->codecpar->bit_rate;

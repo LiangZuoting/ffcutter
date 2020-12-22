@@ -139,12 +139,12 @@
       <item>
        <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>时长：</string>
+         <string>结束时间：</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QTimeEdit" name="durationSecEdit">
+       <widget class="QTimeEdit" name="endSecEdit">
         <property name="minimumSize">
          <size>
           <width>100</width>
