@@ -79,6 +79,7 @@ private:
     void clearFrames(QList<FCFrame> &frames);
     QSharedPointer<FCFilter> createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat);
     QSharedPointer<FCFilter> createAudioFilter(const AVStream* srcStream, QString filters, const AVStream* dstStream, int frameSize);
+    int checkPtsRange(const FCFrame& frame, int64_t startPts, int64_t endPts, QList<FCFrame>& frames);
     bool filterAndMuxFrame(QSharedPointer<FCFilter>& filter, FCMuxer& muxer, AVFrame* frame, AVMediaType type);
 
     QMutex _mutex;

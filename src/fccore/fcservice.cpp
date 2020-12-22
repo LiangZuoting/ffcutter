@@ -179,9 +179,9 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		auto entry = muxEntry;
 		QMutexLocker _(&_mutex);
 		// 按视频流 seek 到后边的关键帧
-		auto startPts = _demuxer->secToTs(entry.vStreamIndex, entry.startSec);
-		auto endPts = _demuxer->secToTs(entry.vStreamIndex, entry.endSec);
-		_demuxer->fastSeek(entry.vStreamIndex, startPts);
+		auto vStartPts = _demuxer->secToTs(entry.vStreamIndex, entry.startSec);
+		auto vEndPts = _demuxer->secToTs(entry.vStreamIndex, entry.endSec);
+		_demuxer->fastSeek(entry.vStreamIndex, vStartPts);
 
 		AVStream* demuxAudioStream = _demuxer->stream(entry.aStreamIndex);
 		auto demuxVideoStream = _demuxer->stream(entry.vStreamIndex);
@@ -219,9 +219,14 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 			emit errorOcurred();
 			return;
 		}
+		int64_t aStartPts = 0;
+		int64_t aEndPts = _I64_MAX;
 		QSharedPointer<FCFilter> audioFilter;
 		if (demuxAudioStream)
 		{
+			aStartPts = _demuxer->secToTs(entry.aStreamIndex, entry.startSec);
+			aEndPts = _demuxer->secToTs(entry.aStreamIndex, entry.endSec);
+
 			audioFilter = createAudioFilter(demuxAudioStream, entry.aFilterString, dstAudioStream, muxer.fixedAudioFrameSize());
 			if (_lastError < 0)
 			{
@@ -230,49 +235,49 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 			}
 		}
 
-		bool ending = false;
-		while (!ending && _lastError >= 0)
+		bool aEnding = false;
+		bool vEnding = false;
+		while ((!aEnding || !vEnding) && _lastError >= 0)
 		{
 			auto [err, decodedFrames] = _demuxer->decodeNextPacket(streamFilter);
 			_lastError = err;
-			ending = _lastError == AVERROR_EOF;
-			if (ending)
+			if (_lastError == AVERROR_EOF)
 			{
+				aEnding = vEnding = true;
 				_lastError = 0;
 				for (auto i : streamFilter) // 尾部放一个空帧，flush filter & encoder 用
 				{
 					decodedFrames.push_back({ i, nullptr });
 				}
 			}
+			QList<FCFrame> frames;
 			for (int i = 0; i < decodedFrames.size() && _lastError >= 0; ++i)
 			{
 				auto decodedFrame = decodedFrames[i];
-				if (decodedFrame.frame && decodedFrame.streamIndex == entry.vStreamIndex)
+				if (decodedFrame.frame)
 				{
-					if (decodedFrame.frame->pts < startPts)
+					if (decodedFrame.streamIndex == entry.vStreamIndex && !vEnding)
 					{
-						continue;
+						vEnding = checkPtsRange(decodedFrame, vStartPts, vEndPts, frames) > 0;
 					}
-					if (decodedFrame.frame->pts > endPts)
+					else if (decodedFrame.streamIndex == entry.aStreamIndex && !aEnding)
 					{
-						ending = true;
-						for (auto i : streamFilter) // 尾部放一个空帧，flush filter & encoder 用
-						{
-							decodedFrames.push_back({ i, nullptr });
-						}
+						aEnding = checkPtsRange(decodedFrame, aStartPts, aEndPts, frames) > 0;
 					}
 				}
-
-				if (entry.vStreamIndex == decodedFrame.streamIndex)
+			}
+			for (auto frame : frames)
+			{
+				if (entry.vStreamIndex == frame.streamIndex)
 				{
-					if (!filterAndMuxFrame(videoFilter, muxer, decodedFrame.frame, AVMEDIA_TYPE_VIDEO))
+					if (!filterAndMuxFrame(videoFilter, muxer, frame.frame, AVMEDIA_TYPE_VIDEO))
 					{
 						break;
 					}
 				}
-				else if (entry.aStreamIndex == decodedFrame.streamIndex)
+				else if (entry.aStreamIndex == frame.streamIndex)
 				{
-					if (!filterAndMuxFrame(audioFilter, muxer, decodedFrame.frame, AVMEDIA_TYPE_AUDIO))
+					if (!filterAndMuxFrame(audioFilter, muxer, frame.frame, AVMEDIA_TYPE_AUDIO))
 					{
 						break;
 					}
@@ -429,6 +434,21 @@ QSharedPointer<FCFilter> FCService::createAudioFilter(const AVStream* srcStream,
 	params.frameSize = frameSize;
 	_lastError = filter->create(params);
 	return filter;
+}
+
+int FCService::checkPtsRange(const FCFrame& frame, int64_t startPts, int64_t endPts, QList<FCFrame>& frames)
+{
+	if (frame.frame->pts < startPts)
+	{
+		return -1;
+	}
+	if (frame.frame->pts > endPts)
+	{
+		frames.push_back({ frame.streamIndex, nullptr });
+		return 1;
+	}
+	frames.push_back(frame);
+	return 0;
 }
 
 bool FCService::filterAndMuxFrame(QSharedPointer<FCFilter>& filter, FCMuxer& muxer, AVFrame* frame, AVMediaType type)
