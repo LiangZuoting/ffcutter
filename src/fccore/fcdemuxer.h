@@ -2,11 +2,12 @@
 
 #include <QMap>
 #include <QPair>
+#include <QSharedPointer>
 extern "C"
 {
 #include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
 }
+#include "fcdecoder.h"
 #include "fcconst.h"
 
 /// <summary>
@@ -53,11 +54,11 @@ public:
 	void close();
 
 private:
-	QPair<int, AVCodecContext*> getCodecContext(int streamIndex);
+	QPair<int, QSharedPointer<FCDecoder>> getCodecContext(int streamIndex);
 	FCDecodeResult decodePacket(int streamIndex, AVPacket *packet);
 
 	AVFormatContext* _formatContext = nullptr;
 	// map from stream index to codec context
-	QMap<int, AVCodecContext*> _codecContexts;
+	QMap<int, QSharedPointer<FCDecoder>> _decoders;
 	QMap<int, AVStream*> _streams;
 };

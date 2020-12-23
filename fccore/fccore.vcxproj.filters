@@ -50,6 +50,9 @@
     <ClInclude Include="..\src\fccore\fcaudiofilter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\fccore\fcdecoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\fccore\fcservice.cpp">
@@ -74,6 +77,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\fccore\fcaudiofilter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\fccore\fcdecoder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -41,10 +41,10 @@ int FCDemuxer::fastSeek(int streamIndex, int64_t timestamp)
 	{
 		FCUtil::printAVError(ret, "av_seek_frame, stream:", streamIndex, "timestamp:", timestamp);
 	}
-	auto [_, codecContext] = getCodecContext(streamIndex);
-	if (codecContext)
+	auto [_, decoder] = getCodecContext(streamIndex);
+	if (decoder)
 	{
-		avcodec_flush_buffers(codecContext);
+		decoder->flushBuffers();
 	}
 	return ret;
 }
@@ -88,7 +88,6 @@ FCDecodeResult FCDemuxer::decodeNextPacket(const QVector<int>& streamFilter)
 {
 	int ret = 0;
 	QList<FCFrame> frames;
-	int streamIndex = 0;
 	while (ret >= 0)
 	{
 		FCPacket packet = { 0 };
@@ -108,12 +107,11 @@ FCDecodeResult FCDemuxer::decodeNextPacket(const QVector<int>& streamFilter)
 			FCUtil::printAVError(ret, "av_read_frame");
 			break;
 		}
-		streamIndex = packet.stream_index;
 		if (!streamFilter.isEmpty() && !streamFilter.contains(packet.stream_index))
 		{
 			continue;
 		}
-		auto [err, f] = decodePacket(streamIndex, &packet);
+		auto [err, f] = decodePacket(packet.stream_index, &packet);
 		ret = err;
 		if (!f.isEmpty())
 		{
@@ -163,101 +161,35 @@ void FCDemuxer::close()
 		_formatContext = nullptr;
 		_streams.clear();
 	}
-	for (auto iter = _codecContexts.begin(); iter != _codecContexts.end(); ++iter)
-	{
-		avcodec_free_context(&(iter.value()));
-	}
-	_codecContexts.clear();
+	_decoders.clear();
 }
 
-QPair<int, AVCodecContext*> FCDemuxer::getCodecContext(int streamIndex)
+QPair<int, QSharedPointer<FCDecoder>> FCDemuxer::getCodecContext(int streamIndex)
 {
-	if (auto iter = _codecContexts.constFind(streamIndex); iter != _codecContexts.cend())
+	if (auto iter = _decoders.constFind(streamIndex); iter != _decoders.cend())
 	{
 		return { 0, iter.value() };
 	}
+	int ret = 0;
 	if (auto iter = _streams.constFind(streamIndex); iter != _streams.cend())
 	{
-		auto stream = iter.value();
-		int ret = 0;
-		AVCodecContext* codecContext = nullptr;
-		do 
+		QSharedPointer<FCDecoder> decoder(new FCDecoder());
+		ret = decoder->open(iter.value());
+		if (ret >= 0)
 		{
-			AVCodec* codec = avcodec_find_decoder(stream->codecpar->codec_id);
-			codecContext = avcodec_alloc_context3(codec);
-			ret = avcodec_parameters_to_context(codecContext, stream->codecpar);
-			if (ret < 0)
-			{
-				FCUtil::printAVError(ret, "avcodec_parameters_to_context");
-				break;
-			}
-			ret = avcodec_open2(codecContext, codec, nullptr);
-			if (ret < 0)
-			{
-				FCUtil::printAVError(ret, "avcodec_open2");
-				break;
-			}
-		} while (0);
-		if (ret < 0)
-		{
-			if (codecContext)
-			{
-				avcodec_free_context(&codecContext);
-			}
+			_decoders.insert(streamIndex, decoder);
+			return { ret, decoder };
 		}
-		else
-		{
-			_codecContexts.insert(streamIndex, codecContext);
-		}
-		return { ret, codecContext };
 	}
-	FCUtil::printAVError(AVERROR_INVALIDDATA, "getCodecContext");
-	return { AVERROR_INVALIDDATA, nullptr };
+	return { ret, nullptr };
 }
 
 FCDecodeResult FCDemuxer::decodePacket(int streamIndex, AVPacket *packet)
 {
-	int ret = 0;
-	QList<FCFrame> frames;
-	do 
+	auto [err, decoder] = getCodecContext(streamIndex);
+	if (err < 0)
 	{
-		auto [err, codecContext] = getCodecContext(streamIndex);
-		ret = err;
-		if (ret < 0)
-		{
-			break;
-		}
-		ret = avcodec_send_packet(codecContext, packet);
-		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-		{
-			ret = 0;
-			break;
-		}
-		if (ret < 0)
-		{
-			FCUtil::printAVError(ret, "avcodec_send_packet");
-		}
-		while (ret >= 0)
-		{
-			AVFrame *frame = av_frame_alloc();
-			ret = avcodec_receive_frame(codecContext, frame);
-			if (ret >= 0)
-			{
-				if (frame->pts == AV_NOPTS_VALUE)
-				{
-					frame->pts = frame->pkt_dts;
-				}
-				frames.push_back({ streamIndex, frame });
-				continue;
-			}
-			av_frame_free(&frame);
-			if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-			{
-				ret = 0;
-				break;
-			}
-			FCUtil::printAVError(ret, "avcodec_receive_frame");
-		}
-	} while (0);
-	return { ret, frames };
+		return { err, QList<FCFrame>() };
+	}
+	return decoder->decodePacket(packet);
 }
