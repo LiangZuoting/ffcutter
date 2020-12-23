@@ -187,7 +187,7 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		auto demuxVideoStream = _demuxer->stream(entry.vStreamIndex);
 		if (entry.fps <= 0)
 		{
-			entry.fps = demuxVideoStream->avg_frame_rate.num / demuxVideoStream->avg_frame_rate.den;
+			entry.fps = av_q2d(demuxVideoStream->avg_frame_rate) + 0.5;
 		}
 
 		FCMuxer muxer;

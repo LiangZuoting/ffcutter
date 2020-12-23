@@ -51,10 +51,11 @@ void FCEditWidget::setCurrentStream(int streamIndex)
 	auto stream = _service->stream(streamIndex);
 	ui.widthEdit->setText(QString::number(stream->codecpar->width));
 	ui.heightEdit->setText(QString::number(stream->codecpar->height));
-	ui.fpsEdit->setText(QString::number(stream->avg_frame_rate.num / stream->avg_frame_rate.den));
+	int fps = av_q2d(stream->avg_frame_rate) + 0.5;
+	ui.fpsEdit->setText(QString::number(fps));
 	if (stream->duration >= 0)
 	{
-		double msecs = (double)stream->duration * stream->time_base.num / stream->time_base.den * 1000;
+		double msecs = (double)stream->duration * av_q2d(stream->time_base) * 1000;
 		QTime t = QTime(0, 0).addMSecs(msecs);
 		ui.endSecEdit->setTime(t);
 	}
@@ -205,7 +206,7 @@ void FCEditWidget::makeScaleFilter(QString &filters, FCMuxEntry &muxEntry, const
 
 void FCEditWidget::makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream)
 {
-	int srcFps = stream->avg_frame_rate.num / stream->avg_frame_rate.den;
+	int srcFps = av_q2d(stream->avg_frame_rate) + 0.5;
 	muxEntry.fps = ui.fpsEdit->text().toInt();
 	if (muxEntry.fps <= 0)
 	{
