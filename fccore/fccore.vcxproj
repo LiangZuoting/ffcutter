@@ -11,28 +11,34 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\fccore\fcaudioencoder.h" />
     <ClInclude Include="..\src\fccore\fcaudiofilter.h" />
     <ClInclude Include="..\src\fccore\fcconst.h" />
     <ClInclude Include="..\src\fccore\fccore_global.h" />
     <ClInclude Include="..\src\fccore\fcdecoder.h" />
     <ClInclude Include="..\src\fccore\fcdemuxer.h" />
+    <ClInclude Include="..\src\fccore\fcencoder.h" />
     <ClInclude Include="..\src\fccore\fcfilter.h" />
     <ClInclude Include="..\src\fccore\fcmuxer.h" />
     <ClInclude Include="..\src\fccore\fcscaler.h" />
     <ClInclude Include="..\src\fccore\fcmuxentry.h" />
     <ClInclude Include="..\src\fccore\fcutil.h" />
+    <ClInclude Include="..\src\fccore\fcvideoencoder.h" />
     <ClInclude Include="..\src\fccore\fcvideofilter.h" />
     <QtMoc Include="..\src\fccore\fcservice.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\fccore\fcaudioencoder.cpp" />
     <ClCompile Include="..\src\fccore\fcaudiofilter.cpp" />
     <ClCompile Include="..\src\fccore\fcdecoder.cpp" />
     <ClCompile Include="..\src\fccore\fcdemuxer.cpp" />
+    <ClCompile Include="..\src\fccore\fcencoder.cpp" />
     <ClCompile Include="..\src\fccore\fcfilter.cpp" />
     <ClCompile Include="..\src\fccore\fcmuxer.cpp" />
     <ClCompile Include="..\src\fccore\fcscaler.cpp" />
     <ClCompile Include="..\src\fccore\fcservice.cpp" />
     <ClCompile Include="..\src\fccore\fcutil.cpp" />
+    <ClCompile Include="..\src\fccore\fcvideoencoder.cpp" />
     <ClCompile Include="..\src\fccore\fcvideofilter.cpp" />
   </ItemGroup>
   <ItemGroup>

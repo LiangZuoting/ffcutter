@@ -1,7 +1,9 @@
 #pragma once
 
-#include <QPair>
+#include <QSharedPointer>
 #include "fcmuxentry.h"
+#include "fcvideoencoder.h"
+#include "fcaudioencoder.h"
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -25,12 +27,11 @@ public:
 	/// <summary>
 	/// 
 	/// </summary>
+	/// <param name="type"></param>
 	/// <param name="frame"></param>
 	/// <returns>负数为错误码，否则为写入的帧数</returns>
-	int writeVideo(AVFrame *frame);
-	int writeVideos(const QList<AVFrame *> &frames);
-	int writeAudio(AVFrame *frame);
-	int writeAudios(const QList<AVFrame*>& frames);
+	int write(AVMediaType type, AVFrame *frame);
+	int write(AVMediaType type, const QList<AVFrame *> &frames);
 
 	int writeTrailer();
 
@@ -43,16 +44,7 @@ public:
 	void destroy();
 
 private:
-	int createVideoCodec(const FCMuxEntry& muxEntry);
-	int createAudioCodec(const FCMuxEntry &muxEntry);
-	int writeFrame(AVFrame *frame, AVCodecContext* codecContext, AVStream* stream);
-
 	AVFormatContext *_formatContext = nullptr;
-	AVCodecContext *_audioCodec = nullptr;
-	AVStream *_audioStream = nullptr;
-	AVCodecContext *_videoCodec = nullptr;
-	AVStream* _videoStream = nullptr;
-	AVCodecContext *_subtitleCodec = nullptr;
-	int64_t _audioPts = 0;
-	int64_t _videoPts = 0;
+	QSharedPointer<FCEncoder> _audioEncoder;
+	QSharedPointer<FCEncoder> _videoEncoder;
 };

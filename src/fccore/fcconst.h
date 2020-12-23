@@ -25,6 +25,12 @@ struct FCFilterResult
 	QList<AVFrame *> frames;
 };
 
+struct FCEncodeResult
+{
+	int error = 0;
+	QList<AVPacket *> packets;
+};
+
 /// <summary>
 /// 析构时自动调用 av_packet_unref()
 /// </summary>

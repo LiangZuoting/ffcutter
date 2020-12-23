@@ -468,14 +468,7 @@ bool FCService::filterAndMuxFrame(QSharedPointer<FCFilter>& filter, FCMuxer& mux
 		}
 		frames = filteredFrames;
 	}
-	if (type == AVMEDIA_TYPE_VIDEO)
-	{
-		_lastError = muxer.writeVideos(frames);
-	}	
-	else
-	{
-		_lastError = muxer.writeAudios(frames);
-	}
+	_lastError = muxer.write(type, frames);
 	clearFrames(frames);
 	return _lastError >= 0;
 }
