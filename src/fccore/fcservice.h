@@ -75,17 +75,12 @@ Q_SIGNALS:
 private:
     FCScaler::ScaleResult scale(AVFrame *frame, AVPixelFormat dstFormat, int dstWidth, int dstHeight, uint8_t *scaledData[4] = nullptr, int scaledLineSizes[4] = nullptr);
     QSharedPointer<FCScaler> getScaler(AVFrame *frame, int dstWidth, int dstHeight, AVPixelFormat dstFormat);
-    void clearFrames(QList<AVFrame *> &frames);
     void clearFrames(QList<FCFrame> &frames);
-    QSharedPointer<FCFilter> createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat);
-    QSharedPointer<FCFilter> createAudioFilter(const AVStream* srcStream, QString filters, const AVStream* dstStream, int frameSize);
-    int checkPtsRange(const FCFrame& frame, int64_t startPts, int64_t endPts, QList<FCFrame>& frames);
-    bool filterAndMuxFrame(QSharedPointer<FCFilter>& filter, FCMuxer& muxer, AVFrame* frame, AVMediaType type);
 
     QMutex _mutex;
     int _lastError = 0;
     QString _lastErrorString;
     QThreadPool *_threadPool = nullptr;
-    FCDemuxer* _demuxer = nullptr;
+    QSharedPointer<FCDemuxer> _demuxer = nullptr;
     QVector<QSharedPointer<FCScaler>> _vecScaler;
 };

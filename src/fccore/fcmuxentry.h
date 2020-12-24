@@ -21,7 +21,7 @@ struct FCMuxEntry
 	int height = 0;
 	int fps = 0;
 	int gop =  12;
-	QString vfilterString;
+	QString vFilterString;
 	// audio
 	int aStreamIndex = -1;
 	AVSampleFormat sampleFormat = AV_SAMPLE_FMT_NONE;

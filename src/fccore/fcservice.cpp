@@ -2,8 +2,9 @@
 #include <QtConcurrent>
 #include <QImage>
 #include "fcutil.h"
-#include "fcvideofilter.h"
 #include "fcaudiofilter.h"
+#include "fcvideostreamwriter.h"
+#include "fcaudiostreamwriter.h"
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -33,7 +34,7 @@ void FCService::openFileAsync(const QString& filePath)
 {
 	QMutexLocker _(&_mutex);
 
-	_demuxer = new FCDemuxer();
+	_demuxer.reset(new FCDemuxer());
 
 	QtConcurrent::run(_threadPool, [&, filePath]() {
 		QMutexLocker _(&_mutex);
@@ -43,8 +44,6 @@ void FCService::openFileAsync(const QString& filePath)
 		qDebug() << "open file time " << time.elapsed();
 		if (_lastError < 0)
 		{
-			delete _demuxer;
-			_demuxer = nullptr;
 			emit errorOcurred();
 		}
 		else
@@ -172,29 +171,6 @@ void FCService::scaleAsync(AVFrame *frame, int dstWidth, int dstHeight)
 		});
 }
 
-class VideoStreamWriter
-{
-public:
-	VideoStreamWriter(FCMuxEntry, FCDemuxer *, FCMuxer&);
-	bool eof() { return _eof; }
-	void setEof() { _eof = true; }
-
-	// check pts first
-	// filter frame if _filter exists
-	// mux filtered frame
-	int write(FCFrame *frame);
-
-private:
-	int checkPtsRange(FCFrame *frame);
-
-	bool _eof = false;
-	int _inStreamIndex = -1;
-	int64_t _startPts = 0;
-	int64_t _endPts = INT64_MAX;
-	FCFilter *_filter;
-	FCMuxer &_muxer;
-};
-
 void FCService::saveAsync(const FCMuxEntry &muxEntry)
 {
 	QMutexLocker _(&_mutex);
@@ -203,7 +179,6 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		QMutexLocker _(&_mutex);
 		// 按视频流 seek 到后边的关键帧
 		auto vStartPts = _demuxer->secToTs(entry.vStreamIndex, entry.startSec);
-		auto vEndPts = _demuxer->secToTs(entry.vStreamIndex, entry.endSec);
 		_demuxer->fastSeek(entry.vStreamIndex, vStartPts);
 
 		AVStream* demuxAudioStream = _demuxer->stream(entry.aStreamIndex);
@@ -223,88 +198,45 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		QVector<int> streamFilter;
 		if (muxer.videoStream())
 		{
-			streamFilter.push_back(entry.vStreamIndex);
+			streamFilter.append(entry.vStreamIndex);
 		}
-		auto dstAudioStream = muxer.audioStream();
-		if (dstAudioStream)
+		if (muxer.audioStream())
 		{
-			streamFilter.push_back(entry.aStreamIndex);
-		}
-		if (streamFilter.isEmpty())
-		{
-			qCritical("choose at least one stream to save!");
-			return;
+			streamFilter.append(entry.aStreamIndex);
 		}
 
-		auto videoFilter = createVideoFilter(demuxVideoStream, entry.vfilterString, muxer.videoFormat());
-		if (_lastError < 0)
+		FCVideoStreamWriter vWriter(entry, _demuxer, muxer);
+		if (_lastError = vWriter.create(); _lastError < 0)
 		{
 			emit errorOcurred();
 			return;
 		}
-		int64_t aStartPts = 0;
-		int64_t aEndPts = _I64_MAX;
-		QSharedPointer<FCFilter> audioFilter;
-		if (demuxAudioStream)
+		FCAudioStreamWriter aWriter(entry, _demuxer, muxer);
+		if (_lastError = aWriter.create(); _lastError < 0)
 		{
-			aStartPts = _demuxer->secToTs(entry.aStreamIndex, entry.startSec);
-			aEndPts = _demuxer->secToTs(entry.aStreamIndex, entry.endSec);
-
-			audioFilter = createAudioFilter(demuxAudioStream, entry.aFilterString, dstAudioStream, muxer.fixedAudioFrameSize());
-			if (_lastError < 0)
-			{
-				emit errorOcurred();
-				return;
-			}
+			emit errorOcurred();
+			return;
 		}
 
-		bool aEnding = !dstAudioStream;
-		bool vEnding = false;
-		while ((!aEnding || !vEnding) && _lastError >= 0)
+		while ((!vWriter.eof() || !aWriter.eof()) && _lastError >= 0)
 		{
 			auto [err, decodedFrames] = _demuxer->decodeNextPacket(streamFilter);
 			_lastError = err;
 			if (_lastError == AVERROR_EOF)
 			{
-				aEnding = vEnding = true;
+				vWriter.setEof();
+				aWriter.setEof();
 				_lastError = 0;
 				for (auto i : streamFilter) // 尾部放一个空帧，flush filter & encoder 用
 				{
 					decodedFrames.push_back({ i, nullptr });
 				}
 			}
-			QList<FCFrame> frames;
 			for (int i = 0; i < decodedFrames.size() && _lastError >= 0; ++i)
 			{
 				auto decodedFrame = decodedFrames[i];
-				if (decodedFrame.frame)
-				{
-					if (decodedFrame.streamIndex == entry.vStreamIndex && !vEnding)
-					{
-						vEnding = checkPtsRange(decodedFrame, vStartPts, vEndPts, frames) > 0;
-					}
-					else if (decodedFrame.streamIndex == entry.aStreamIndex && !aEnding)
-					{
-						aEnding = checkPtsRange(decodedFrame, aStartPts, aEndPts, frames) > 0;
-					}
-				}
-			}
-			for (auto frame : frames)
-			{
-				if (entry.vStreamIndex == frame.streamIndex)
-				{
-					if (!filterAndMuxFrame(videoFilter, muxer, frame.frame, AVMEDIA_TYPE_VIDEO))
-					{
-						break;
-					}
-				}
-				else if (entry.aStreamIndex == frame.streamIndex)
-				{
-					if (!filterAndMuxFrame(audioFilter, muxer, frame.frame, AVMEDIA_TYPE_AUDIO))
-					{
-						break;
-					}
-				}
+				_lastError = vWriter.write(decodedFrame);
+				_lastError = aWriter.write(decodedFrame);
 			}
 			clearFrames(decodedFrames);
 		}
@@ -342,8 +274,7 @@ void FCService::destroy()
 	if (_demuxer)
 	{
 		_demuxer->close();
-		delete _demuxer;
-		_demuxer = nullptr;
+		_demuxer.reset();
 	}
 	if (_threadPool)
 	{
@@ -395,15 +326,6 @@ QSharedPointer<FCScaler> FCService::getScaler(AVFrame *frame, int dstWidth, int 
 	return scaler;
 }
 
-void FCService::clearFrames(QList<AVFrame *> &frames)
-{
-	for (auto &f : frames)
-	{
-		av_frame_free(&f);
-	}
-	frames.clear();
-}
-
 void FCService::clearFrames(QList<FCFrame> &frames)
 {
 	for (auto &f : frames)
@@ -411,92 +333,4 @@ void FCService::clearFrames(QList<FCFrame> &frames)
 		av_frame_free(&(f.frame));
 	}
 	frames.clear();
-}
-
-QSharedPointer<FCFilter> FCService::createVideoFilter(const AVStream *srcStream, QString filters, AVPixelFormat dstPixelFormat)
-{
-	QSharedPointer<FCFilter> filter(new FCVideoFilter());
-	if (!filters.isEmpty())
-	{
-		filters.append(',');
-	}
-	filters.append("format=").append(av_get_pix_fmt_name(dstPixelFormat));
-	FCVideoFilterParameters params{};
-	params.srcWidth = srcStream->codecpar->width;
-	params.srcHeight = srcStream->codecpar->height;
-	params.srcPixelFormat = (AVPixelFormat)srcStream->codecpar->format;
-	params.srcSampleAspectRatio = srcStream->sample_aspect_ratio;
-	params.dstPixelFormat = dstPixelFormat;
-	params.srcTimeBase = srcStream->time_base;
-	params.filterString = filters;
-	_lastError = filter->create(params);
-	return filter;
-}
-
-QSharedPointer<FCFilter> FCService::createAudioFilter(const AVStream* srcStream, QString filters, const AVStream* dstStream, int frameSize)
-{
-	if (!dstStream)
-	{
-		return {};
-	}
-
-	QSharedPointer<FCFilter> filter(new FCAudioFilter());
-	if (!filters.isEmpty())
-	{
-		filters.append(',');
-	}
-	char layout[100] = { 0 };
-	av_get_channel_layout_string(layout, 100, dstStream->codecpar->channels, dstStream->codecpar->channel_layout);
-	filters.append(QString("aresample=%3,aformat=sample_fmts=%1:channel_layouts=%2")
-		.arg(av_get_sample_fmt_name((AVSampleFormat)dstStream->codecpar->format))
-		.arg(layout).arg(dstStream->codecpar->sample_rate));
-	FCAudioFilterParameters params{};
-	params.srcTimeBase = srcStream->time_base;
-	params.srcSampleFormat = (AVSampleFormat)srcStream->codecpar->format;
-	params.srcSampleRate = srcStream->codecpar->sample_rate;
-	params.srcChannelLayout = srcStream->codecpar->channel_layout;
-	params.dstSampleFormat = (AVSampleFormat)dstStream->codecpar->format;
-	params.dstSampleRate = dstStream->codecpar->sample_rate;
-	params.dstChannelLayout = dstStream->codecpar->channel_layout;
-	params.filterString = filters;
-	params.frameSize = frameSize;
-	_lastError = filter->create(params);
-	return filter;
-}
-
-int FCService::checkPtsRange(const FCFrame& frame, int64_t startPts, int64_t endPts, QList<FCFrame>& frames)
-{
-	if (frame.frame->pts < startPts)
-	{
-		return -1;
-	}
-	if (frame.frame->pts > endPts)
-	{
-		frames.push_back({ frame.streamIndex, nullptr });
-		return 1;
-	}
-	frames.push_back(frame);
-	return 0;
-}
-
-bool FCService::filterAndMuxFrame(QSharedPointer<FCFilter>& filter, FCMuxer& muxer, AVFrame* frame, AVMediaType type)
-{
-	QList<AVFrame*> frames;
-	if (filter)
-	{
-		auto [err, filteredFrames] = filter->filter(frame);
-		if (_lastError = err; _lastError < 0)
-		{
-			clearFrames(filteredFrames);
-			return false;
-		}
-		if (!frame) // flush encoder
-		{
-			filteredFrames.push_back(nullptr);
-		}
-		frames = filteredFrames;
-	}
-	_lastError = muxer.write(type, frames);
-	clearFrames(frames);
-	return _lastError >= 0;
 }
