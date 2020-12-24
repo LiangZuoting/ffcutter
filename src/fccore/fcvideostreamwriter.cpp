@@ -6,9 +6,7 @@ extern "C"
 }
 
 FCVideoStreamWriter::FCVideoStreamWriter(const FCMuxEntry& entry, const QSharedPointer<FCDemuxer>& demuxer, FCMuxer& muxer)
-	: _entry(entry)
-	, _demuxer(demuxer)
-	, _muxer(muxer)
+	: FCStreamWriter(entry, demuxer, muxer)
 {
 	
 }
@@ -26,51 +24,9 @@ bool FCVideoStreamWriter::eof() const
 	return !_muxer.videoStream() || _eof;
 }
 
-void FCVideoStreamWriter::setEof()
-{
-	_eof = true;
-}
-
 int FCVideoStreamWriter::write(const FCFrame& frame)
 {
-	QList<AVFrame*> frames;
-	if (_inStreamIndex != frame.streamIndex || _eof)
-	{
-		return 0;
-	}
-	int ret = checkPtsRange(frame);
-	if (ret < 0)
-	{
-		return 0;
-	}
-	if (ret > 0)
-	{
-		_eof = true;
-	}
-	if (_filter)
-	{
-		auto filterResult = _filter->filter(_eof ? nullptr : frame.frame);
-		ret = filterResult.error;
-		if (ret < 0)
-		{
-			return ret;
-		}
-		frames = filterResult.frames;
-	}
-	else if (!_eof)
-	{
-		frames.push_back(frame.frame);
-	}
-	if (_eof)
-	{
-		frames.push_back(nullptr);
-	}
-	ret = _muxer.write(AVMEDIA_TYPE_VIDEO, frames);
-	if (_filter)
-	{
-		clearFrames(frames);
-	}
-	return ret;
+	return FCStreamWriter::write(AVMEDIA_TYPE_VIDEO, frame);
 }
 
 int FCVideoStreamWriter::createFilter()
@@ -96,26 +52,4 @@ int FCVideoStreamWriter::createFilter()
 	params.srcTimeBase = srcStream->time_base;
 	params.filterString = filters;
 	return _filter->create(params);
-}
-
-int FCVideoStreamWriter::checkPtsRange(const FCFrame& frame)
-{
-	if (frame.frame->pts < _startPts)
-	{
-		return -1;
-	}
-	if (frame.frame->pts > _endPts)
-	{
-		return 1;
-	}
-	return 0;
-}
-
-void FCVideoStreamWriter::clearFrames(QList<AVFrame*>& frames)
-{
-	for (auto& f : frames)
-	{
-		av_frame_free(&f);
-	}
-	frames.clear();
 }

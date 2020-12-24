@@ -23,6 +23,7 @@
     <ClInclude Include="..\src\fccore\fcmuxer.h" />
     <ClInclude Include="..\src\fccore\fcscaler.h" />
     <ClInclude Include="..\src\fccore\fcmuxentry.h" />
+    <ClInclude Include="..\src\fccore\fcstreamwriter.h" />
     <ClInclude Include="..\src\fccore\fcutil.h" />
     <ClInclude Include="..\src\fccore\fcvideoencoder.h" />
     <ClInclude Include="..\src\fccore\fcvideofilter.h" />
@@ -40,6 +41,7 @@
     <ClCompile Include="..\src\fccore\fcmuxer.cpp" />
     <ClCompile Include="..\src\fccore\fcscaler.cpp" />
     <ClCompile Include="..\src\fccore\fcservice.cpp" />
+    <ClCompile Include="..\src\fccore\fcstreamwriter.cpp" />
     <ClCompile Include="..\src\fccore\fcutil.cpp" />
     <ClCompile Include="..\src\fccore\fcvideoencoder.cpp" />
     <ClCompile Include="..\src\fccore\fcvideofilter.cpp" />
