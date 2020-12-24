@@ -172,6 +172,29 @@ void FCService::scaleAsync(AVFrame *frame, int dstWidth, int dstHeight)
 		});
 }
 
+class VideoStreamWriter
+{
+public:
+	VideoStreamWriter(FCMuxEntry, FCDemuxer *, FCMuxer&);
+	bool eof() { return _eof; }
+	void setEof() { _eof = true; }
+
+	// check pts first
+	// filter frame if _filter exists
+	// mux filtered frame
+	int write(FCFrame *frame);
+
+private:
+	int checkPtsRange(FCFrame *frame);
+
+	bool _eof = false;
+	int _inStreamIndex = -1;
+	int64_t _startPts = 0;
+	int64_t _endPts = INT64_MAX;
+	FCFilter *_filter;
+	FCMuxer &_muxer;
+};
+
 void FCService::saveAsync(const FCMuxEntry &muxEntry)
 {
 	QMutexLocker _(&_mutex);
