@@ -259,7 +259,7 @@ void FCEditWidget::makeSubtitleFilter(QString& filters)
 		return;
 	}
 	srtFile = srtFile.replace(':', "\\\\:");
-	appendFilter(filters, QString("subtitles=filename=%1").arg(srtFile));
+	appendFilter(filters, QString("subtitles=filename=%1:force_style=\'fontsize=48\'").arg(srtFile));
 }
 
 void FCEditWidget::appendFilter(QString &filters, const QString &newFilter)

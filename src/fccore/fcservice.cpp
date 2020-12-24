@@ -235,7 +235,7 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 			}
 		}
 
-		bool aEnding = false;
+		bool aEnding = !dstAudioStream;
 		bool vEnding = false;
 		while ((!aEnding || !vEnding) && _lastError >= 0)
 		{
@@ -412,6 +412,11 @@ QSharedPointer<FCFilter> FCService::createVideoFilter(const AVStream *srcStream,
 
 QSharedPointer<FCFilter> FCService::createAudioFilter(const AVStream* srcStream, QString filters, const AVStream* dstStream, int frameSize)
 {
+	if (!dstStream)
+	{
+		return {};
+	}
+
 	QSharedPointer<FCFilter> filter(new FCAudioFilter());
 	if (!filters.isEmpty())
 	{
