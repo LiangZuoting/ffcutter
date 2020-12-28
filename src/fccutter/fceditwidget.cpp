@@ -171,7 +171,9 @@ void FCEditWidget::loadFontSize()
 	QFile f("fontsizes.txt");
 	f.open(QFile::ReadOnly);
 	QString text = f.readAll();
-	ui.fontSizeComboBox->addItems(text.split(','));
+	auto ls = text.split(',');
+	ui.fontSizeComboBox->addItems(ls);
+	ui.stFontSizeComboBox->addItems(ls);
 }
 
 void FCEditWidget::loadFonts()
@@ -259,7 +261,7 @@ void FCEditWidget::makeSubtitleFilter(QString& filters)
 		return;
 	}
 	srtFile = srtFile.replace(':', "\\\\:");
-	appendFilter(filters, QString("subtitles=filename=%1:force_style=\'fontsize=48\'").arg(srtFile));
+	appendFilter(filters, QString("subtitles=filename=%1:force_style=\'fontsize=%2\'").arg(srtFile).arg(ui.stFontSizeComboBox->currentText().toInt()));
 }
 
 void FCEditWidget::appendFilter(QString &filters, const QString &newFilter)
