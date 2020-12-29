@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>617</width>
-    <height>352</height>
+    <height>378</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -520,6 +520,13 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QLineEdit" name="filterEdit">
+     <property name="placeholderText">
+      <string>自定义滤镜</string>
+     </property>
+    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_8">

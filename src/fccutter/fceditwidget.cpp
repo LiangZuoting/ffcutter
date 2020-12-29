@@ -264,6 +264,11 @@ void FCEditWidget::makeSubtitleFilter(QString& filters)
 	appendFilter(filters, QString("subtitles=filename=%1:force_style=\'fontsize=%2\'").arg(srtFile).arg(ui.stFontSizeComboBox->currentText().toInt()));
 }
 
+void FCEditWidget::makeCustomFilter(QString &filters)
+{
+	appendFilter(filters, ui.filterEdit->text());
+}
+
 void FCEditWidget::appendFilter(QString &filters, const QString &newFilter)
 {
 	if (!filters.isEmpty())

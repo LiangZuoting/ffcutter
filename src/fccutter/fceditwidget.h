@@ -41,6 +41,7 @@ private:
 	void makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);
 	void makeTextFilter(QString &filters);
 	void makeSubtitleFilter(QString& filters);
+	void makeCustomFilter(QString &filters);
 	void appendFilter(QString &filters, const QString &newFilter);
 
 	Ui::FCEditWidget ui;
