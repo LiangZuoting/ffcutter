@@ -1,6 +1,7 @@
 #include "fcservice.h"
 #include <QtConcurrent>
 #include <QImage>
+#include <QStringList>
 #include "fcutil.h"
 #include "fcaudiofilter.h"
 #include "fcvideostreamwriter.h"

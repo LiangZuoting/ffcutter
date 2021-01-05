@@ -16,6 +16,11 @@ protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
 
+private Q_SLOTS:
+    void onConcatClicked();
+
 private:
+    void concatAsync(const QStringList &srcFilePaths, const QString &dstFilePath);
+
     Ui::FCMainWindowClass ui;
 };
