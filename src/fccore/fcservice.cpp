@@ -225,8 +225,6 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 			_lastError = err;
 			if (_lastError == AVERROR_EOF)
 			{
-				vWriter.setEof();
-				aWriter.setEof();
 				_lastError = 0;
 				for (auto i : streamFilter) // 尾部放一个空帧，flush filter & encoder 用
 				{

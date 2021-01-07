@@ -62,6 +62,10 @@ int FCStreamWriter::write(AVMediaType type, const FCFrame& frame)
 
 int FCStreamWriter::checkPtsRange(const FCFrame& frame)
 {
+	if (!frame.frame) // ´«Èë¿ÕÖ¡£¬eof
+	{
+		return 1;
+	}
 	if (frame.frame->pts < _startPts)
 	{
 		return -1;

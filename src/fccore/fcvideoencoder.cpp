@@ -1,5 +1,9 @@
 #include "fcvideoencoder.h"
 #include "fcutil.h"
+extern "C"
+{
+#include <libavutil/opt.h>
+}
 
 FCVideoEncoder::~FCVideoEncoder()
 {
@@ -56,6 +60,13 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 				FCUtil::printAVError(ret, "avcodec_parameters_from_context");
 				break;
 			}
+
+			ret = av_opt_set_int(_context, "crf", 23, AV_OPT_SEARCH_CHILDREN);
+			if (ret)
+			{
+				FCUtil::printAVError(ret, "av_opt_set_int");
+			}
+
 			ret = avcodec_open2(_context, codec, nullptr);
 			if (ret)
 			{
