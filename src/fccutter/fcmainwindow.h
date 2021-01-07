@@ -20,7 +20,5 @@ private Q_SLOTS:
     void onConcatClicked();
 
 private:
-    void concatAsync(const QStringList &srcFilePaths, const QString &dstFilePath);
-
     Ui::FCMainWindowClass ui;
 };
