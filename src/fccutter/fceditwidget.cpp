@@ -123,6 +123,7 @@ void FCEditWidget::onSaveClicked()
 			}
 
 			QString vFilters;
+			makeCropFilter(vFilters);
 			makeScaleFilter(vFilters, muxEntry, stream);
 			makeFpsFilter(vFilters, muxEntry, stream);
 			makeTextFilter(vFilters);
@@ -186,6 +187,18 @@ void FCEditWidget::loadFonts()
 		QRawFont rawFont(filePath, 10);
 		ui.fontComboBox->addItem(rawFont.familyName(), filePath);
 	}
+}
+
+void FCEditWidget::makeCropFilter(QString &filters)
+{
+	int width = ui.cropWidthEdit->text().toInt();
+	int height = ui.cropHeightEdit->text().toInt();
+	if (width <= 0 || height <= 0)
+	{
+		return;
+	}
+	appendFilter(filters, QString("crop=x=%1:y=%2:w=%3:h=%4").arg(ui.cropXEdit->text().toInt())
+		.arg(ui.cropYEdit->text().toInt()).arg(width).arg(height));
 }
 
 void FCEditWidget::makeScaleFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream)

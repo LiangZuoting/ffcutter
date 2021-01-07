@@ -37,6 +37,7 @@ private:
 	void setService(const QSharedPointer<FCService> &service);
 	void loadFontSize();
 	void loadFonts();
+	void makeCropFilter(QString &filters);
 	void makeScaleFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);
 	void makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);
 	void makeTextFilter(QString &filters);
