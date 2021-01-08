@@ -61,10 +61,13 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 				break;
 			}
 
-			ret = av_opt_set_int(_context, "crf", 23, AV_OPT_SEARCH_CHILDREN);
-			if (ret)
+			if (codec->id == AV_CODEC_ID_H264)
 			{
-				FCUtil::printAVError(ret, "av_opt_set_int");
+				ret = av_opt_set_int(_context, "crf", 23, AV_OPT_SEARCH_CHILDREN);
+				if (ret)
+				{
+					qWarning() << "av_opt_set_int crf error" << ret;
+				}
 			}
 
 			ret = avcodec_open2(_context, codec, nullptr);
