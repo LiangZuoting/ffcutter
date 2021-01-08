@@ -66,7 +66,7 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 				ret = av_opt_set_int(_context, "crf", 23, AV_OPT_SEARCH_CHILDREN);
 				if (ret)
 				{
-					qWarning() << "av_opt_set_int crf error" << ret;
+					FCUtil::printAVError(ret, "av_opt_set_int");
 				}
 			}
 
