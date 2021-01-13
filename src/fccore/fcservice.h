@@ -9,7 +9,6 @@
 #include <QMutex>
 #include "fcscaler.h"
 #include "fcmuxer.h"
-#include "fcmuxentry.h"
 #include "fcdemuxer.h"
 #include "fcfilter.h"
 extern "C"

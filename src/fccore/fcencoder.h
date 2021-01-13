@@ -1,6 +1,5 @@
 #pragma once
 
-#include "fcmuxentry.h"
 #include "fcconst.h"
 extern "C"
 {

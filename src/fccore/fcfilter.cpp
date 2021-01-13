@@ -12,6 +12,13 @@ FCFilter::~FCFilter()
 	destroy();
 }
 
+int FCFilter::create(const FCFilterParameters &params)
+{
+	_startPts = params.startPts;
+	_endPts = params.endPts;
+	return 0;
+}
+
 FCFilterResult FCFilter::filter(AVFrame *frame)
 {
 	if (!frame)
@@ -93,6 +100,23 @@ void FCFilter::destroy()
 		_sinkContext = nullptr;
 	}
 	avfilter_graph_free(&_graph);
+}
+
+int FCFilter::checkPtsRange(const AVFrame *frame)
+{
+	if (!frame) // ´«Èë¿ÕÖ¡£¬eof
+	{
+		return 1;
+	}
+	if (frame->pts < _startPts)
+	{
+		return -1;
+	}
+	if (frame->pts > _endPts)
+	{
+		return 1;
+	}
+	return 0;
 }
 
 int FCFilter::create(const FCFilterParameters &params, const AVFilter *srcFilter, const char *args, const AVFilter *sinkFilter)
