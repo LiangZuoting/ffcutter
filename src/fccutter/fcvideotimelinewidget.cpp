@@ -1,5 +1,6 @@
 #include "fcvideotimelinewidget.h"
 #include <QDebug>
+#include <QScrollBar>
 
 FCVideoTimelineWidget::FCVideoTimelineWidget(QWidget *parent)
 	: QWidget(parent)
@@ -68,8 +69,20 @@ void FCVideoTimelineWidget::appendFrames(const QList<FCFrame>& frames)
 
 void FCVideoTimelineWidget::onForwardBtnClicked()
 {
-	clear();
-	decodeOnce();
+	auto hsb = ui.scrollArea->horizontalScrollBar();
+	if (!hsb)
+	{
+		return;
+	}
+	if (hsb->value() != hsb->maximum())
+	{
+		hsb->setValue(hsb->maximum());
+	}
+	else
+	{
+		clear();
+		decodeOnce();
+	}
 }
 
 void FCVideoTimelineWidget::onFrameDecoded(QList<FCFrame> frames)
