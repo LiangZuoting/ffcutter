@@ -7,6 +7,7 @@
 #include "fcloadingdialog.h"
 
 class FCMainWidget;
+class FCClipFilterWidget;
 class FCEditWidget : public QWidget
 {
 	Q_OBJECT
@@ -27,16 +28,12 @@ private Q_SLOTS:
 	void onFastSeekClicked();
 	void onExactSeekClicked();
 	void onSaveClicked();
-	void onTextColorClicked();
-	void onSubtitleBtnClicked();
 	void onSeekFinished(int streamIndex, QList<FCFrame> frames);
 	void onSaveFinished();
 	void onErrorOcurred();
 
 private:
 	void setService(const QSharedPointer<FCService> &service);
-	void loadFontSize();
-	void loadFonts();
 	void makeCropFilter(QString &filters);
 	void makeScaleFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);
 	void makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);
@@ -49,4 +46,5 @@ private:
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;
 	FCLoadingDialog _loadingDialog;
+	FCClipFilterWidget* _currentClip = nullptr;
 };

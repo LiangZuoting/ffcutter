@@ -1,10 +1,9 @@
 #include "fceditwidget.h"
 #include <QFileDialog>
-#include <QColorDialog>
-#include <QRawFont>
 #include <QTime>
 #include "fcmainwidget.h"
 #include "fcutil.h"
+#include "fcclipfilterwidget.h"
 
 FCEditWidget::FCEditWidget(const QSharedPointer<FCService> &service, FCMainWidget *parent)
 	: QWidget(parent)
@@ -15,11 +14,6 @@ FCEditWidget::FCEditWidget(const QSharedPointer<FCService> &service, FCMainWidge
 	connect(ui.fastSeekBtn, SIGNAL(clicked()), this, SLOT(onFastSeekClicked()));
 	connect(ui.exactSeekBtn, SIGNAL(clicked()), this, SLOT(onExactSeekClicked()));
 	connect(ui.saveBtn, SIGNAL(clicked()), this, SLOT(onSaveClicked()));
-	connect(ui.textColorBtn, SIGNAL(clicked()), this, SLOT(onTextColorClicked()));
-	connect(ui.subtitleBtn, SIGNAL(clicked()), this, SLOT(onSubtitleBtnClicked()));
-
-	loadFontSize();
-	loadFonts();
 }
 
 FCEditWidget::~FCEditWidget()
@@ -53,24 +47,22 @@ void FCEditWidget::setCurrentStream(int streamIndex)
 	ui.heightEdit->setText(QString::number(stream->codecpar->height));
 	int fps = av_q2d(stream->avg_frame_rate) + 0.5;
 	ui.fpsEdit->setText(QString::number(fps));
-	if (stream->duration >= 0)
-	{
-		double msecs = (double)stream->duration * av_q2d(stream->time_base) * 1000;
-		QTime t = QTime(0, 0).addMSecs(msecs);
-		ui.endSecEdit->setTime(t);
-	}
 }
 
 void FCEditWidget::setStartSec(double startSec)
 {
-	QTime t = QTime(0, 0).addMSecs(startSec * 1000);
-	ui.startSecEdit->setTime(t);
+	if (_currentClip)
+	{
+		_currentClip->setStartSec(startSec);
+	}
 }
 
 void FCEditWidget::setEndSec(double endInSec)
 {
-	QTime t = QTime(0, 0).addMSecs(endInSec * 1000);
-	ui.endSecEdit->setTime(t);
+	if (_currentClip)
+	{
+		_currentClip->setEndSec(endInSec);
+	}
 }
 
 void FCEditWidget::onFastSeekClicked()
@@ -135,22 +127,6 @@ void FCEditWidget::onSaveClicked()
 	}
 }
 
-void FCEditWidget::onTextColorClicked()
-{
-	auto color = QColorDialog::getColor(QColor(ui.textColorBtn->text()));
-	ui.textColorBtn->setStyleSheet("background: " + color.name());
-	ui.textColorBtn->setText(color.name());
-}
-
-void FCEditWidget::onSubtitleBtnClicked()
-{
-	QString srtFile = QFileDialog::getOpenFileName(this, tr("choose srt file"), QString(), "×ÖÄ»ÎÄ¼þ (*.srt)");
-	if (!srtFile.isEmpty())
-	{
-		ui.subtitleEdit->setText(srtFile);
-	}
-}
-
 void FCEditWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames)
 {
 	_loadingDialog.close();
@@ -165,28 +141,6 @@ void FCEditWidget::onSaveFinished()
 void FCEditWidget::onErrorOcurred()
 {
 	_loadingDialog.close();
-}
-
-void FCEditWidget::loadFontSize()
-{
-	QFile f("fontsizes.txt");
-	f.open(QFile::ReadOnly);
-	QString text = f.readAll();
-	auto ls = text.split(',');
-	ui.fontSizeComboBox->addItems(ls);
-	ui.stFontSizeComboBox->addItems(ls);
-}
-
-void FCEditWidget::loadFonts()
-{
-	QDir fontsDir("fonts");
-	auto ls = fontsDir.entryInfoList(QDir::Files);
-	for (int i = 0; i < ls.size(); ++i)
-	{
-		auto filePath = ls[i].absoluteFilePath();
-		QRawFont rawFont(filePath, 10);
-		ui.fontComboBox->addItem(rawFont.familyName(), filePath);
-	}
 }
 
 void FCEditWidget::makeCropFilter(QString &filters)
