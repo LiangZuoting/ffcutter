@@ -36,7 +36,8 @@ int FCAudioStreamWriter::createFilter()
 	{
 		return 0;
 	}
-	_filter.reset(new FCAudioFilter());
+	auto filter = QSharedPointer<FCFilter>(new FCAudioFilter());
+	_filters.append(filter);
 	auto filters = _entry.aFilterString;
 	if (!filters.isEmpty())
 	{
@@ -58,5 +59,5 @@ int FCAudioStreamWriter::createFilter()
 	params.dstChannelLayout = dstStream->codecpar->channel_layout;
 	params.filterString = filters;
 	params.frameSize = _muxer.fixedAudioFrameSize();
-	return _filter->create(params);
+	return filter->create(params);
 }
