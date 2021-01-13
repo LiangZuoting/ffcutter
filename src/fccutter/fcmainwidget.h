@@ -3,7 +3,7 @@
 #include <QWidget>
 #include "ui_fcmainwidget.h"
 #include <fcservice.h>
-#include "fcmuxentry.h"
+#include "fcconst.h"
 extern "C"
 {
 #include <libavformat/avformat.h>

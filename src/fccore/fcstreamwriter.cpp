@@ -20,23 +20,36 @@ void FCStreamWriter::setEof()
 
 int FCStreamWriter::write(AVMediaType type, const FCFrame& frame)
 {
-	QList<AVFrame*> frames;
 	if (_inStreamIndex != frame.streamIndex || _eof)
 	{
 		return 0;
 	}
-	int ret = checkPtsRange(frame);
-	if (ret < 0)
+	QList<AVFrame *> frames;
+	if (_filters.isEmpty())
 	{
-		return 0;
+		_eof = !frame.frame;
+		frames.push_back(frame.frame);
 	}
-	if (ret > 0)
+	int ret = 0;
+	for (int i = _currentFilter; i < _filters.size(); ++i)
 	{
-		_eof = true;
-	}
-	if (_filter)
-	{
-		auto filterResult = _filter->filter(_eof ? nullptr : frame.frame);
+		_currentFilter = i;
+		bool eof = false;
+		auto filter = _filters[i];
+		ret = filter->checkPtsRange(frame.frame);
+		if (ret < 0)
+		{
+			return 0;
+		}
+		if (ret > 0)
+		{
+			if (i == _filters.size() - 1)
+			{
+				_eof = true;
+			}
+			eof = true;
+		}
+		auto filterResult = filter->filter(eof ? nullptr : frame.frame);
 		ret = filterResult.error;
 		if (ret < 0)
 		{
@@ -44,16 +57,12 @@ int FCStreamWriter::write(AVMediaType type, const FCFrame& frame)
 		}
 		frames = filterResult.frames;
 	}
-	else if (!_eof)
-	{
-		frames.push_back(frame.frame);
-	}
 	if (_eof)
 	{
 		frames.push_back(nullptr);
 	}
 	ret = _muxer.write(type, frames);
-	if (_filter)
+	if (!_filters.isEmpty())
 	{
 		clearFrames(frames);
 	}

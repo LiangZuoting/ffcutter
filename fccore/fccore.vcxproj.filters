@@ -26,9 +26,6 @@
     <ClInclude Include="..\src\fccore\fcscaler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\fccore\fcmuxentry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\fccore\fcutil.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -59,6 +59,9 @@
     <ClCompile Include="..\src\fccutter\fcconcatdialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\fccutter\fcclipfilterwidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="..\src\fccutter\fcmainwindow.h">
@@ -85,6 +88,9 @@
     <QtMoc Include="..\src\fccutter\fcconcatdialog.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="..\src\fccutter\fcclipfilterwidget.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="..\src\fccutter\fcmainwidget.ui">
@@ -106,6 +112,9 @@
       <Filter>Form Files</Filter>
     </QtUic>
     <QtUic Include="..\src\fccutter\fcconcatdialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="..\src\fccutter\fcclipfilterwidget.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>
