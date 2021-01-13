@@ -111,6 +111,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <QtRcc Include="..\src\fccutter.qrc" />
+    <QtUic Include="..\src\fccutter\fcclipfilterwidget.ui" />
     <QtUic Include="..\src\fccutter\fcconcatdialog.ui" />
     <QtUic Include="..\src\fccutter\fceditwidget.ui" />
     <QtUic Include="..\src\fccutter\fcfileinfowidget.ui" />
@@ -121,6 +122,7 @@
     <QtUic Include="..\src\fccutter\fcvideotimelinewidget.ui" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\fccutter\fcclipfilterwidget.cpp" />
     <ClCompile Include="..\src\fccutter\fcconcatdialog.cpp" />
     <ClCompile Include="..\src\fccutter\fceditwidget.cpp" />
     <ClCompile Include="..\src\fccutter\fcfileinfowidget.cpp" />
@@ -154,6 +156,9 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="..\src\fccutter\fcconcatdialog.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="..\src\fccutter\fcclipfilterwidget.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

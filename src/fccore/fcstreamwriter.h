@@ -2,10 +2,10 @@
 
 #include <QSharedPointer>
 #include "fccore_global.h"
-#include "fcmuxentry.h"
 #include "fcdemuxer.h"
 #include "fcmuxer.h"
 #include "fcfilter.h"
+#include "fcconst.h"
 
 class FCStreamWriter
 {
@@ -28,5 +28,6 @@ protected:
     const FCMuxEntry& _entry;
     QSharedPointer<FCDemuxer> _demuxer;
     FCMuxer& _muxer;
-    QSharedPointer<FCFilter> _filter;
+    QList<QSharedPointer<FCFilter>> _filters;
+    int _currentFilter = 0;
 };

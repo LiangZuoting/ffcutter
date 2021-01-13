@@ -35,21 +35,30 @@ int FCVideoStreamWriter::createFilter()
 	{
 		return 0;
 	}
-	_filter.reset(new FCVideoFilter());
-	auto filters = _entry.vFilterString;
-	if (!filters.isEmpty())
-	{
-		filters.append(',');
-	}
-	filters.append("format=").append(av_get_pix_fmt_name(_muxer.videoFormat()));
 	auto srcStream = _demuxer->stream(_inStreamIndex);
-	FCVideoFilterParameters params{};
-	params.srcWidth = srcStream->codecpar->width;
-	params.srcHeight = srcStream->codecpar->height;
-	params.srcPixelFormat = (AVPixelFormat)srcStream->codecpar->format;
-	params.srcSampleAspectRatio = srcStream->sample_aspect_ratio;
-	params.dstPixelFormat = _muxer.videoFormat();
-	params.srcTimeBase = srcStream->time_base;
-	params.filterString = filters;
-	return _filter->create(params);
+	QString formatFilter = QString("format=").append(av_get_pix_fmt_name(_muxer.videoFormat()));
+	for (auto f : _entry.vFilters)
+	{
+		auto filter = QSharedPointer<FCFilter>(new FCVideoFilter());
+		_filters.append(filter);
+		auto filterStr = f.filterString;
+		if (!filterStr.isEmpty())
+		{
+			filterStr.append(',');
+		}
+		filterStr.append(formatFilter);
+		FCVideoFilterParameters params{};
+		params.srcWidth = srcStream->codecpar->width;
+		params.srcHeight = srcStream->codecpar->height;
+		params.srcPixelFormat = (AVPixelFormat)srcStream->codecpar->format;
+		params.srcSampleAspectRatio = srcStream->sample_aspect_ratio;
+		params.dstPixelFormat = _muxer.videoFormat();
+		params.srcTimeBase = srcStream->time_base;
+		params.filterString = filterStr;
+		if (int ret = filter->create(params); ret < 0)
+		{
+			return ret;
+		}
+	}
+	return 0;
 }

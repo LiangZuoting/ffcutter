@@ -1,9 +1,9 @@
 #pragma once
 
 #include <QSharedPointer>
-#include "fcmuxentry.h"
 #include "fcvideoencoder.h"
 #include "fcaudioencoder.h"
+#include "fcconst.h"
 extern "C"
 {
 #include <libavformat/avformat.h>
