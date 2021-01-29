@@ -13,33 +13,27 @@ int FCMuxer::create(const FCMuxEntry &muxEntry)
 	do 
 	{
 		auto filePath = muxEntry.filePath.toStdString();
-		int ret = avformat_alloc_output_context2(&_formatContext, nullptr, nullptr, filePath.data());
-		if (ret < 0)
+		if (ret = avformat_alloc_output_context2(&_formatContext, nullptr, nullptr, filePath.data()); ret < 0)
 		{
 			break;
 		}
 
 		_videoEncoder.reset(new FCVideoEncoder());
-		ret = _videoEncoder->create(_formatContext, muxEntry);
-		if (ret < 0)
+		if (ret = _videoEncoder->create(_formatContext, muxEntry); ret < 0)
 		{
 			break;
 		}
 		_audioEncoder.reset(new FCAudioEncoder());
-		ret = _audioEncoder->create(_formatContext, muxEntry);
-		if (ret < 0)
+		if (ret = _audioEncoder->create(_formatContext, muxEntry); ret < 0)
 		{
 			break;
 		}
-
-		ret = avio_open(&_formatContext->pb, filePath.data(), AVIO_FLAG_WRITE);
-		if (ret < 0)
+		if (ret = avio_open(&_formatContext->pb, filePath.data(), AVIO_FLAG_WRITE); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avio_open");
 			break;
 		}
-		ret = avformat_write_header(_formatContext, nullptr);
-		if (ret < 0)
+		if (ret = avformat_write_header(_formatContext, nullptr); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avformat_write_header");
 			break;

@@ -55,8 +55,7 @@ FCDecodeResult FCDecoder::decodePacket(AVPacket *packet)
 	QList<FCFrame> frames;
 	do 
 	{
-		ret = avcodec_send_packet(_context, packet);
-		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+		if (ret = avcodec_send_packet(_context, packet); ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
 		{
 			ret = 0;
 			break;
@@ -69,8 +68,7 @@ FCDecodeResult FCDecoder::decodePacket(AVPacket *packet)
 		while (ret >= 0)
 		{
 			AVFrame *frame = av_frame_alloc();
-			ret = avcodec_receive_frame(_context, frame);
-			if (ret >= 0)
+			if (ret = avcodec_receive_frame(_context, frame); ret >= 0)
 			{
 				if (frame->pts == AV_NOPTS_VALUE)
 				{

@@ -13,8 +13,7 @@ FCEncodeResult FCEncoder::encode(AVFrame *frame)
 	{
 		frame->pts = _nextPts;
 	}
-	result.error = avcodec_send_frame(_context, frame);
-	if (result.error == AVERROR(EAGAIN) || result.error == AVERROR_EOF)
+	if (result.error = avcodec_send_frame(_context, frame); result.error == AVERROR(EAGAIN) || result.error == AVERROR_EOF)
 	{
 		result.error = 0;
 	}
@@ -25,8 +24,7 @@ FCEncodeResult FCEncoder::encode(AVFrame *frame)
 	else while (result.error >= 0)
 	{
 		AVPacket *packet = av_packet_alloc();
-		result.error = avcodec_receive_packet(_context, packet);
-		if (result.error == AVERROR(EAGAIN) || result.error == AVERROR_EOF)
+		if (result.error = avcodec_receive_packet(_context, packet); result.error == AVERROR(EAGAIN) || result.error == AVERROR_EOF)
 		{
 			result.error = 0;
 			break;

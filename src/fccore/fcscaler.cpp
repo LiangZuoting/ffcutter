@@ -14,8 +14,6 @@ int FCScaler::create(int srcWidth, int srcHeight, AVPixelFormat srcFormat, int d
 	if (_lastError < 0)
 	{
 		FCUtil::printAVError(_lastError, "av_image_fill_arrays");
-		sws_freeContext(_swsContext);
-		_swsContext = nullptr;
 		return _lastError;
 	}
 	_srcWidth = srcWidth;

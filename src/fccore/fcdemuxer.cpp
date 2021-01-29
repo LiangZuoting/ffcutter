@@ -12,14 +12,12 @@ int FCDemuxer::open(const QString& filePath)
 	auto url = filePath.toStdString();
 	do 
 	{
-		ret = avformat_open_input(&_formatContext, url.data(), nullptr, nullptr);
-		if (ret < 0)
+		if (ret = avformat_open_input(&_formatContext, url.data(), nullptr, nullptr); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avformat_open_input");
 			break;
 		}
-		ret = avformat_find_stream_info(_formatContext, nullptr);
-		if (ret < 0)
+		if (ret = avformat_find_stream_info(_formatContext, nullptr); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avformat_find_stream_info");
 			break;
@@ -51,8 +49,8 @@ int FCDemuxer::fastSeek(int streamIndex, int64_t timestamp)
 
 FCDecodeResult FCDemuxer::exactSeek(int streamIndex, int64_t timestamp)
 {
-	int ret = fastSeek(streamIndex, timestamp);
 	QList<FCFrame> resultFrames;
+	int ret = fastSeek(streamIndex, timestamp);
 	if (ret < 0)
 	{
 		return {ret, resultFrames};
@@ -91,8 +89,7 @@ FCDecodeResult FCDemuxer::decodeNextPacket(const QVector<int>& streamFilter)
 	while (ret >= 0)
 	{
 		FCPacket packet = { 0 };
-		ret = av_read_frame(_formatContext, &packet);
-		if (ret == AVERROR_EOF) // flush all decoders
+		if (ret = av_read_frame(_formatContext, &packet); ret == AVERROR_EOF) // flush all decoders
 		{
 			for (auto i : streamFilter)
 			{
@@ -174,8 +171,7 @@ QPair<int, QSharedPointer<FCDecoder>> FCDemuxer::getCodecContext(int streamIndex
 	if (auto iter = _streams.constFind(streamIndex); iter != _streams.cend())
 	{
 		QSharedPointer<FCDecoder> decoder(new FCDecoder());
-		ret = decoder->open(iter.value());
-		if (ret >= 0)
+		if (ret = decoder->open(iter.value()); ret >= 0)
 		{
 			_decoders.insert(streamIndex, decoder);
 			return { ret, decoder };

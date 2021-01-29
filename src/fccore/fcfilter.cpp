@@ -31,8 +31,7 @@ FCFilterResult FCFilter::filter(AVFrame *frame)
 		while (ret >= 0)
 		{
 			AVFrame *dstFrame = av_frame_alloc();
-			ret = av_buffersink_get_frame(_sinkContext, dstFrame);
-			if (ret >= 0)
+			if (ret = av_buffersink_get_frame(_sinkContext, dstFrame); ret >= 0)
 			{
 				frames.push_back(dstFrame);
 				continue;
@@ -60,8 +59,7 @@ FCFilterResult FCFilter::flush()
 	while (ret >= 0)
 	{
 		AVFrame *dstFrame = av_frame_alloc();
-		ret = av_buffersink_get_frame_flags(_sinkContext, dstFrame, AV_BUFFERSINK_FLAG_NO_REQUEST);
-		if (ret >= 0)
+		if (ret = av_buffersink_get_frame_flags(_sinkContext, dstFrame, AV_BUFFERSINK_FLAG_NO_REQUEST); ret >= 0)
 		{
 			frames.push_back(dstFrame);
 			continue;
@@ -107,20 +105,17 @@ int FCFilter::create(const FCFilterParameters &params, const AVFilter *srcFilter
 	int ret = 0;
 	do
 	{
-		ret = avfilter_graph_create_filter(&_srcContext, srcFilter, "in", args, nullptr, _graph);
-		if (ret < 0)
+		if (ret = avfilter_graph_create_filter(&_srcContext, srcFilter, "in", args, nullptr, _graph); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avfilter_graph_create_filter");
 			break;
 		}
-		ret = avfilter_graph_create_filter(&_sinkContext, sinkFilter, "out", nullptr, nullptr, _graph);
-		if (ret < 0)
+		if (ret = avfilter_graph_create_filter(&_sinkContext, sinkFilter, "out", nullptr, nullptr, _graph); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avfilter_graph_create_filter");
 			break;
 		}
-		ret = setSinkFilter(params);
-		if (ret < 0)
+		if (ret = setSinkFilter(params); ret < 0)
 		{
 			break;
 		}
@@ -133,14 +128,12 @@ int FCFilter::create(const FCFilterParameters &params, const AVFilter *srcFilter
 		_outputs->pad_idx = 0;
 		_outputs->next = nullptr;
 		auto strFilter = params.filterString.toStdString();
-		ret = avfilter_graph_parse_ptr(_graph, strFilter.data(), &_inputs, &_outputs, nullptr);
-		if (ret < 0)
+		if (ret = avfilter_graph_parse_ptr(_graph, strFilter.data(), &_inputs, &_outputs, nullptr); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avfilter_graph_parse_ptr");
 			break;
 		}
-		ret = avfilter_graph_config(_graph, nullptr);
-		if (ret < 0)
+		if (ret = avfilter_graph_config(_graph, nullptr); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avfilter_graph_config");
 			break;

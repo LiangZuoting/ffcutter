@@ -40,15 +40,13 @@ int FCAudioFilter::setSinkFilter(const FCFilterParameters &params)
 		return ret;
 	}
 	int64_t layouts[] = { aParams->dstChannelLayout, -1 };
-	ret = av_opt_set_int_list(_sinkContext, "channel_layouts", layouts, -1, AV_OPT_SEARCH_CHILDREN);
-	if (ret < 0)
+	if (ret = av_opt_set_int_list(_sinkContext, "channel_layouts", layouts, -1, AV_OPT_SEARCH_CHILDREN); ret < 0)
 	{
 		FCUtil::printAVError(ret, "av_opt_set_int_list", "channel_layouts");
 		return ret;
 	}
 	int rates[] = { aParams->dstSampleRate, -1 };
-	ret = av_opt_set_int_list(_sinkContext, "sample_rates", rates, -1, AV_OPT_SEARCH_CHILDREN);
-	if (ret < 0)
+	if (ret = av_opt_set_int_list(_sinkContext, "sample_rates", rates, -1, AV_OPT_SEARCH_CHILDREN); ret < 0)
 	{
 		FCUtil::printAVError(ret, "av_opt_set_int_list", "sample_rates");
 		return ret;

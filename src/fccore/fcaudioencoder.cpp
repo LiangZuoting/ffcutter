@@ -23,12 +23,11 @@ int FCAudioEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 		_context->sample_fmt = codec->sample_fmts[0];
 		for (int i = 0; codec->sample_fmts; ++i)
 		{
-			auto fmt = codec->sample_fmts[i];
-			if (fmt == AV_SAMPLE_FMT_NONE)
+			if (auto fmt = codec->sample_fmts[i]; fmt == AV_SAMPLE_FMT_NONE)
 			{
 				break;
 			}
-			if (fmt == muxEntry.sampleFormat)
+			else if (fmt == muxEntry.sampleFormat)
 			{
 				_context->sample_fmt = fmt;
 				break;
@@ -37,23 +36,19 @@ int FCAudioEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 		_context->sample_rate = muxEntry.sampleRate;
 		for (int i = 0; codec->channel_layouts; ++i)
 		{
-			auto layout = codec->channel_layouts[i];
-			if (layout == -1)
+			if (auto layout = codec->channel_layouts[i]; layout == -1)
 			{
 				break;
 			}
-			if (layout == muxEntry.channel_layout)
+			else if (layout == muxEntry.channel_layout)
 			{
 				_context->channel_layout = layout;
 				break;
 			}
 		}
-		if (!_context->channel_layout)
+		if (!_context->channel_layout && codec->channel_layouts)
 		{
-			if (codec->channel_layouts)
-			{
-				_context->channel_layout = codec->channel_layouts[0];
-			}
+			_context->channel_layout = codec->channel_layouts[0];
 		}
 		if (!_context->channel_layout)
 		{
@@ -68,14 +63,12 @@ int FCAudioEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 		_stream = avformat_new_stream(_formatContext, codec);
 		_stream->id = _formatContext->nb_streams - 1;
 		_stream->time_base = { 1, _context->sample_rate };
-		ret = avcodec_parameters_from_context(_stream->codecpar, _context);
-		if (ret < 0)
+		if (ret = avcodec_parameters_from_context(_stream->codecpar, _context); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avcodec_parameters_from_context");
 			break;
 		}
-		ret = avcodec_open2(_context, codec, nullptr);
-		if (ret < 0)
+		if (ret = avcodec_open2(_context, codec, nullptr); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avcodec_open2");
 			break;

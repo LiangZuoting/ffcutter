@@ -29,12 +29,11 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 			_context->pix_fmt = codec->pix_fmts[0];
 			for (int i = 0; ; ++i)
 			{
-				auto fmt = codec->pix_fmts[i];
-				if (fmt == AV_PIX_FMT_NONE)
+				if (auto fmt = codec->pix_fmts[i]; fmt == AV_PIX_FMT_NONE)
 				{
 					break;
 				}
-				if (fmt == muxEntry.pixelFormat)
+				else if (fmt == muxEntry.pixelFormat)
 				{
 					_context->pix_fmt = fmt;
 					break;
@@ -54,24 +53,19 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 			_stream->id = _formatContext->nb_streams - 1;
 			_stream->time_base = _context->time_base;
 			_stream->avg_frame_rate = _context->framerate;
-			int ret = avcodec_parameters_from_context(_stream->codecpar, _context);
-			if (ret)
+			if (ret = avcodec_parameters_from_context(_stream->codecpar, _context); ret)
 			{
 				FCUtil::printAVError(ret, "avcodec_parameters_from_context");
 				break;
 			}
-
 			if (codec->id == AV_CODEC_ID_H264)
 			{
-				ret = av_opt_set_int(_context, "crf", 23, AV_OPT_SEARCH_CHILDREN);
-				if (ret)
+				if (ret = av_opt_set_int(_context, "crf", 23, AV_OPT_SEARCH_CHILDREN); ret)
 				{
 					FCUtil::printAVError(ret, "av_opt_set_int");
 				}
 			}
-
-			ret = avcodec_open2(_context, codec, nullptr);
-			if (ret)
+			if (ret = avcodec_open2(_context, codec, nullptr); ret)
 			{
 				FCUtil::printAVError(ret, "avcodec_open2");
 				break;
