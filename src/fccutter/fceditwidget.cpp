@@ -216,7 +216,12 @@ void FCEditWidget::makeScaleFilter(QString &filters, FCMuxEntry &muxEntry, const
 	{
 		muxEntry.height = srcHeight;
 	}
-	appendFilter(filters, QString("scale=width=%1:height=%2").arg(muxEntry.width).arg(muxEntry.height));
+	QSize scaledSize;
+	if (ui.scaleAspectBtn->isChecked())
+	{
+		scaledSize = QSize(srcWidth, srcHeight).scaled(muxEntry.width, muxEntry.height, Qt::KeepAspectRatio);
+	}
+	appendFilter(filters, QString("scale=width=%1:height=%2,pad=%3:%4:-1:-1").arg(scaledSize.width()).arg(scaledSize.height()).arg(muxEntry.width).arg(muxEntry.height));
 }
 
 void FCEditWidget::makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream)
