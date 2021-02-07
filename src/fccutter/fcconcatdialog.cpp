@@ -50,15 +50,18 @@ void FCConcatDialog::dropEvent(QDropEvent *event)
 
 void FCConcatDialog::onAddClicked()
 {
-	auto filePath = QFileDialog::getOpenFileName(this, tr("select a file"));
-	if (!filePath.isEmpty())
+	auto filePaths = QFileDialog::getOpenFileNames(this, tr("select a file"));
+	if (!filePaths.isEmpty())
 	{
 		int current = ui.inListWidget->currentRow();
 		if (current < 0)
 		{
 			current = ui.inListWidget->count();
 		}
-		ui.inListWidget->insertItem(current, filePath);
+		for (const auto &filePath : filePaths)
+		{
+			ui.inListWidget->insertItem(current++, filePath);
+		}
 	}
 }
 

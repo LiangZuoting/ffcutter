@@ -2,6 +2,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_fcmainwindow.h"
+#include "fcconcatdialog.h"
 
 class FCMainWindow : public QMainWindow
 {
@@ -21,4 +22,5 @@ private Q_SLOTS:
 
 private:
     Ui::FCMainWindowClass ui;
+    FCConcatDialog _concatDialog;
 };

@@ -2,7 +2,6 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QMimeData>
-#include "fcconcatdialog.h"
 
 FCMainWindow::FCMainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -40,6 +39,5 @@ void FCMainWindow::dropEvent(QDropEvent* event)
 
 void FCMainWindow::onConcatClicked()
 {
-	FCConcatDialog dlg(this);
-	dlg.exec();
+	_concatDialog.show();
 }
