@@ -58,9 +58,10 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 				FCUtil::printAVError(ret, "avcodec_parameters_from_context");
 				break;
 			}
-			if (codec->id == AV_CODEC_ID_H264)
+			std::unordered_map<AVCodecID, int> defaultCRF{ {AV_CODEC_ID_H264, 23}, {AV_CODEC_ID_HEVC, 28} };
+			if (auto iter = defaultCRF.find(codecId); iter != defaultCRF.cend())
 			{
-				if (ret = av_opt_set_int(_context, "crf", 23, AV_OPT_SEARCH_CHILDREN); ret)
+				if (ret = av_opt_set_int(_context, "crf", iter->second, AV_OPT_SEARCH_CHILDREN); ret)
 				{
 					FCUtil::printAVError(ret, "av_opt_set_int");
 				}
