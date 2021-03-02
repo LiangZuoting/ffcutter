@@ -44,7 +44,8 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 			* H264 codec 不能 set 这个 flag，否则文件不能解析；
 			* gif 必须 set 这个 flag，否则图像效果不对。
 			*/
-			if (_formatContext->oformat->flags & AVFMT_GLOBALHEADER && _context->codec_id != AV_CODEC_ID_H264)
+			if (_formatContext->oformat->flags & AVFMT_GLOBALHEADER && _context->codec_id != AV_CODEC_ID_H264
+				&& codecId != AV_CODEC_ID_HEVC)
 			{
 				_context->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 			}
@@ -58,7 +59,7 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 				FCUtil::printAVError(ret, "avcodec_parameters_from_context");
 				break;
 			}
-			std::unordered_map<AVCodecID, int> defaultCRF{ {AV_CODEC_ID_H264, 23}, {AV_CODEC_ID_HEVC, 28} };
+			std::unordered_map<AVCodecID, int> defaultCRF{ {AV_CODEC_ID_H264, 23}, {AV_CODEC_ID_HEVC, 38} };
 			if (auto iter = defaultCRF.find(codecId); iter != defaultCRF.cend())
 			{
 				if (ret = av_opt_set_int(_context, "crf", iter->second, AV_OPT_SEARCH_CHILDREN); ret)
