@@ -20,6 +20,9 @@ public:
 	void setStartSec(double startSec);
 	void setEndSec(double endInSec);
 
+public Q_SLOTS:
+	void fastSeek(double seconds);
+
 Q_SIGNALS:
 	void seekFinished(int streamIndex, QList<FCFrame> frames);
 

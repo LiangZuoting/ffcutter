@@ -73,6 +73,14 @@ void FCEditWidget::setEndSec(double endInSec)
 	ui.endSecEdit->setTime(t);
 }
 
+void FCEditWidget::fastSeek(double seconds)
+{
+	QTime t = QTime(0, 0).addMSecs(seconds * 1000);
+	ui.seekEdit->setTime(t);
+
+	onFastSeekClicked();
+}
+
 void FCEditWidget::onFastSeekClicked()
 {
 	if (_streamIndex < 0)

@@ -44,6 +44,11 @@ void FCMainWidget::closeFile()
 		delete _vTimelineWidget;
 		_vTimelineWidget = nullptr;
 	}
+	if (_simpleTimelineWidget)
+	{
+		delete _simpleTimelineWidget;
+		_simpleTimelineWidget = nullptr;
+	}
 	_streamIndex = -1;
 	_service.reset();
 }
@@ -91,6 +96,11 @@ void FCMainWidget::selectStreamItem(int streamIndex)
 		_vTimelineWidget->setService(_service);
 		_vTimelineWidget->clear();
 		_vTimelineWidget->decodeOnce();
+
+		_simpleTimelineWidget = new FCSimpleTimelineWidget(_service, this);
+		connect(_simpleTimelineWidget, SIGNAL(seekRequest(double)), _opWidget, SLOT(fastSeek(double)));
+		ui.layout->addWidget(_simpleTimelineWidget);
+		_simpleTimelineWidget->setCurrentStream(streamIndex);
 	}
 }
 

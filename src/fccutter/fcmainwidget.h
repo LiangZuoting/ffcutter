@@ -12,6 +12,7 @@ extern "C"
 #include "fceditwidget.h"
 #include "fcfileinfowidget.h"
 #include "fcvideotimelinewidget.h"
+#include "fcsimpletimelinewidget.h"
 
 class FCMainWidget : public QWidget
 {
@@ -38,6 +39,7 @@ private:
 	FCFileInfoWidget *_fiWidget = nullptr;
 	FCEditWidget *_opWidget = nullptr;
 	FCVideoTimelineWidget *_vTimelineWidget = nullptr;
+	FCSimpleTimelineWidget *_simpleTimelineWidget{ nullptr };
 	int _streamIndex = -1;
 	FCLoadingDialog _loadingDialog;
 };
