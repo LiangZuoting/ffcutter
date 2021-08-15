@@ -26,7 +26,7 @@ FCVideoFrameWidget::~FCVideoFrameWidget()
 void FCVideoFrameWidget::setService(const QSharedPointer<FCService>& service)
 {
 	_service = service;
-	connect(_service.data(), SIGNAL(scaleFinished(AVFrame*, QPixmap)), this, SLOT(onScaleFinished(AVFrame *, QPixmap)));
+	connect(_service.data(), SIGNAL(scaleFinished(AVFrame*, QPixmap, void *)), this, SLOT(onScaleFinished(AVFrame *, QPixmap, void *)));
 }
 
 void FCVideoFrameWidget::setStreamIndex(int streamIndex)
@@ -42,7 +42,7 @@ void FCVideoFrameWidget::setFrame(AVFrame* frame)
 	QSize size = QSize(frame->width, frame->height).scaled(frame->width, ui.thumbnailLabel->height(), Qt::KeepAspectRatio);
 	ui.thumbnailLabel->setFixedWidth(size.width());
 	setFixedWidth(size.width());
-	_service->scaleAsync(frame, size.width(), size.height());
+	_service->scaleAsync(frame, size.width(), size.height(), this);
 }
 
 void FCVideoFrameWidget::setStart(bool select)
@@ -101,7 +101,7 @@ void FCVideoFrameWidget::mouseDoubleClickEvent(QMouseEvent* event)
 	QWidget::mouseDoubleClickEvent(event);
 }
 
-void FCVideoFrameWidget::onScaleFinished(AVFrame *src, QPixmap scaled)
+void FCVideoFrameWidget::onScaleFinished(AVFrame *src, QPixmap scaled, void *userData)
 {
 	if (src == _frame)
 	{

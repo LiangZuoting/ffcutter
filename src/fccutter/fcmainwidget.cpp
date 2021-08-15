@@ -21,9 +21,9 @@ void FCMainWidget::openFile(const QString& filePath)
 	closeFile();
 
 	_service.reset(new FCService());
-	connect(_service.data(), SIGNAL(fileOpened(QList<AVStream *>)), this, SLOT(onFileOpened(QList<AVStream *>)));
-	connect(_service.data(), SIGNAL(errorOcurred()), this, SLOT(onErrorOcurred()));
-	_service->openFileAsync(filePath);
+	connect(_service.data(), SIGNAL(fileOpened(QList<AVStream *>, void *)), this, SLOT(onFileOpened(QList<AVStream *>, void *)));
+	connect(_service.data(), SIGNAL(errorOcurred(void *)), this, SLOT(onErrorOcurred(void *)));
+	_service->openFileAsync(filePath, this);
 	_loadingDialog.exec2(tr(u8"打开文件..."));
 }
 
@@ -53,11 +53,11 @@ void FCMainWidget::closeFile()
 	_service.reset();
 }
 
-void FCMainWidget::onFileOpened(QList<AVStream *> streams)
+void FCMainWidget::onFileOpened(QList<AVStream *> streams, void *userData)
 {
 	_opWidget = new FCEditWidget(_service, this);
 	ui.layout->addWidget(_opWidget);
-	connect(_opWidget, SIGNAL(seekFinished(int, QList<FCFrame>)), this, SLOT(onSeekFinished(int, QList<FCFrame>)));
+	connect(_opWidget, SIGNAL(seekFinished(int, QList<FCFrame>, void *)), this, SLOT(onSeekFinished(int, QList<FCFrame>, void *)));
 
 	_fiWidget = new FCFileInfoWidget(this);
 	ui.layout->addWidget(_fiWidget);
@@ -120,14 +120,14 @@ void FCMainWidget::onEndFrameSelected()
 	}
 }
 
-void FCMainWidget::onErrorOcurred()
+void FCMainWidget::onErrorOcurred(void *userData)
 {
 	_loadingDialog.close();
 }
 
-void FCMainWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames)
+void FCMainWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames, void *userData)
 {
-	if (_vTimelineWidget->streamIndex() == streamIndex)
+	if (userData == _opWidget && _vTimelineWidget->streamIndex() == streamIndex)
 	{
 		_vTimelineWidget->clear();
 		_vTimelineWidget->appendFrames(frames);

@@ -34,7 +34,7 @@ Q_SIGNALS:
 	void rightDoubleClicked();
 
 private Q_SLOTS:
-	void onScaleFinished(AVFrame *src, QPixmap scaled);
+	void onScaleFinished(AVFrame *src, QPixmap scaled, void *userData);
 
 private:
 	Ui::FCVideoFrameWidget ui;

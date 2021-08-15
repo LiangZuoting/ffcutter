@@ -31,7 +31,7 @@ FCService::~FCService()
 	destroy();
 }
 
-void FCService::openFileAsync(const QString& filePath)
+void FCService::openFileAsync(const QString& filePath, void *userData)
 {
 	QMutexLocker _(&_mutex);
 
@@ -45,16 +45,16 @@ void FCService::openFileAsync(const QString& filePath)
 		qDebug() << "open file time " << time.elapsed();
 		if (_lastError < 0)
 		{
-			emit errorOcurred();
+			emit errorOcurred(userData);
 		}
 		else
 		{
-			emit fileOpened(_demuxer->streams());
+			emit fileOpened(_demuxer->streams(), userData);
 		}
 		});
 }
 
-void FCService::decodeOnePacketAsync(int streamIndex)
+void FCService::decodeOnePacketAsync(int streamIndex, void *userData)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
@@ -64,21 +64,21 @@ void FCService::decodeOnePacketAsync(int streamIndex)
 		if (_lastError == AVERROR_EOF)
 		{
 			_lastError = 0;
-			emit eof();
+			emit eof(userData);
 		}
 		if (_lastError < 0)
 		{
-			emit errorOcurred();
+			emit errorOcurred(userData);
 		}
 		else
 		{
-			emit frameDeocded(frames);
-			emit decodeFinished();
+			emit frameDeocded(frames, userData);
+			emit decodeFinished(userData);
 		}
 		});
 }
 
-void FCService::decodePacketsAsync(int streamIndex, int count)
+void FCService::decodePacketsAsync(int streamIndex, int count, void *userData)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
@@ -90,18 +90,18 @@ void FCService::decodePacketsAsync(int streamIndex, int count)
 			if (_lastError == AVERROR_EOF)
 			{
 				_lastError = 0;
-				emit eof();
+				emit eof(userData);
 				break;
 			}
 			if (_lastError < 0)
 			{
-				emit errorOcurred();
+				emit errorOcurred(userData);
 				return;
 			}
 			++i;
-			emit frameDeocded(frames);
+			emit frameDeocded(frames, userData);
 		}
-		emit decodeFinished();
+		emit decodeFinished(userData);
 		});
 }
 
@@ -120,23 +120,23 @@ QList<AVStream*> FCService::streams() const
 	return _demuxer->streams();
 }
 
-void FCService::fastSeekAsync(int streamIndex, double seconds)
+void FCService::fastSeekAsync(int streamIndex, double seconds, void *userData)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
 		if ((_lastError = _demuxer->fastSeek(streamIndex, _demuxer->secToTs(streamIndex, seconds))) < 0)
 		{
-			emit errorOcurred();
+			emit errorOcurred(userData);
 		}
 		else
 		{
-			emit seekFinished(streamIndex, QList<FCFrame>());
+			emit seekFinished(streamIndex, QList<FCFrame>(), userData);
 		}
 		});
 }
 
-void FCService::exactSeekAsync(int streamIndex, double seconds)
+void FCService::exactSeekAsync(int streamIndex, double seconds, void *userData)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
@@ -145,16 +145,16 @@ void FCService::exactSeekAsync(int streamIndex, double seconds)
 		_lastError = err;
 		if ( _lastError < 0 && _lastError != AVERROR_EOF)
 		{
-			emit errorOcurred();
+			emit errorOcurred(userData);
 		}
 		else
 		{
-			emit seekFinished(streamIndex, frames);
+			emit seekFinished(streamIndex, frames, userData);
 		}
 		});
 }
 
-void FCService::scaleAsync(AVFrame *frame, int dstWidth, int dstHeight)
+void FCService::scaleAsync(AVFrame *frame, int dstWidth, int dstHeight, void *userData)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
@@ -168,11 +168,11 @@ void FCService::scaleAsync(AVFrame *frame, int dstWidth, int dstHeight)
 				memcpy(image.scanLine(i), scaleResult.first[0] + i * scaleResult.second[0], dstWidth * (image.depth() / 8));
 			}
 		}
-		emit scaleFinished(frame, QPixmap::fromImage(image));
+		emit scaleFinished(frame, QPixmap::fromImage(image), userData);
 		});
 }
 
-void FCService::saveAsync(const FCMuxEntry &muxEntry)
+void FCService::saveAsync(const FCMuxEntry &muxEntry, void *userData)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
@@ -193,7 +193,7 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		_lastError = muxer.create(entry);
 		if (_lastError < 0)
 		{
-			emit errorOcurred();
+			emit errorOcurred(userData);
 			return;
 		}
 		QVector<int> streamFilter;
@@ -209,13 +209,13 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		FCVideoStreamWriter vWriter(entry, _demuxer, muxer);
 		if (_lastError = vWriter.create(); _lastError < 0)
 		{
-			emit errorOcurred();
+			emit errorOcurred(userData);
 			return;
 		}
 		FCAudioStreamWriter aWriter(entry, _demuxer, muxer);
 		if (_lastError = aWriter.create(); _lastError < 0)
 		{
-			emit errorOcurred();
+			emit errorOcurred(userData);
 			return;
 		}
 
@@ -245,11 +245,11 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry)
 		}
 		if (_lastError < 0)
 		{
-			emit errorOcurred();
+			emit errorOcurred(userData);
 		}
 		else
 		{
-			emit saveFinished();
+			emit saveFinished(userData);
 		}
 		});
 }

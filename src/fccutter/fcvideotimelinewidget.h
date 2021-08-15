@@ -38,8 +38,8 @@ public Q_SLOTS:
 
 private Q_SLOTS:
 	void onForwardBtnClicked();
-	void onFrameDecoded(QList<FCFrame> frames);
-	void onDecodeFinished();
+	void onFrameDecoded(QList<FCFrame> frames, void *userData);
+	void onDecodeFinished(void *userData);
 	void onVideoFrameLeftClicked();
 	void onVideoFrameRightClicked();
 

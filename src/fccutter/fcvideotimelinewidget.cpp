@@ -22,13 +22,13 @@ void FCVideoTimelineWidget::setStreamIndex(int streamIndex)
 void FCVideoTimelineWidget::setService(const QSharedPointer<FCService>& service)
 {
 	_service = service;
-	connect(_service.data(), SIGNAL(frameDeocded(QList<FCFrame>)), this, SLOT(onFrameDecoded(QList<FCFrame>)));
-	connect(_service.data(), SIGNAL(decodeFinished()), this, SLOT(onDecodeFinished()));
+	connect(_service.data(), SIGNAL(frameDeocded(QList<FCFrame>, void *)), this, SLOT(onFrameDecoded(QList<FCFrame>, void *)));
+	connect(_service.data(), SIGNAL(decodeFinished(void *)), this, SLOT(onDecodeFinished(void *)));
 }
 
 void FCVideoTimelineWidget::decodeOnce()
 {
-	_service->decodePacketsAsync(_streamIndex, MAX_LIST_SIZE);
+	_service->decodePacketsAsync(_streamIndex, MAX_LIST_SIZE, this);
 	_loadingDialog.exec2(tr(u8"½âÂë..."));
 }
 
@@ -85,8 +85,13 @@ void FCVideoTimelineWidget::onForwardBtnClicked()
 	}
 }
 
-void FCVideoTimelineWidget::onFrameDecoded(QList<FCFrame> frames)
+void FCVideoTimelineWidget::onFrameDecoded(QList<FCFrame> frames, void *userData)
 {
+	if (userData != this)
+	{
+		return;
+	}
+
 	if (auto [err, des] = _service->lastError(); err < 0)
 	{
 		qDebug() << metaObject()->className() << " decode frame error " << des;
@@ -97,7 +102,7 @@ void FCVideoTimelineWidget::onFrameDecoded(QList<FCFrame> frames)
 	}
 }
 
-void FCVideoTimelineWidget::onDecodeFinished()
+void FCVideoTimelineWidget::onDecodeFinished(void *userData)
 {
 	_loadingDialog.close();
 }

@@ -36,25 +36,25 @@ public:
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>
-    void openFileAsync(const QString& filePath);
-    void decodeOnePacketAsync(int streamIndex);
-    void decodePacketsAsync(int streamIndex, int count);
+    void openFileAsync(const QString& filePath, void *userData);
+    void decodeOnePacketAsync(int streamIndex, void *userData);
+    void decodePacketsAsync(int streamIndex, int count, void *userData);
 
     AVFormatContext* formatContext() const;
     AVStream* stream(int streamIndex) const;
     QList<AVStream*> streams() const;
 
-    void fastSeekAsync(int streamIndex, double seconds);
-    void exactSeekAsync(int streamIndex, double seconds);
+    void fastSeekAsync(int streamIndex, double seconds, void *userData);
+    void exactSeekAsync(int streamIndex, double seconds, void *userData);
     /// <summary>
     /// 将视频 frame 缩放到指定分辨率，并转换成 RGB24 格式的 Pixmap
     /// </summary>
     /// <param name="frame"></param>
     /// <param name="dstWidth"></param>
     /// <param name="dstHeight"></param>
-    void scaleAsync(AVFrame* frame, int dstWidth, int dstHeight);
+    void scaleAsync(AVFrame* frame, int dstWidth, int dstHeight, void *userData);
 
-    void saveAsync(const FCMuxEntry &muxEntry);
+    void saveAsync(const FCMuxEntry &muxEntry, void *userData);
 
     QPair<int, QString> lastError();
 
@@ -63,14 +63,14 @@ public:
     void destroy();
 
 Q_SIGNALS:
-    void eof();
-    void errorOcurred();
-    void fileOpened(QList<AVStream *>);
-    void frameDeocded(QList<FCFrame>);
-    void decodeFinished();
-    void scaleFinished(AVFrame *src, QPixmap scaled);
-    void seekFinished(int streamIndex, QList<FCFrame> frames);
-    void saveFinished();
+    void eof(void *userData);
+    void errorOcurred(void *userData);
+    void fileOpened(QList<AVStream *>, void *userData);
+    void frameDeocded(QList<FCFrame>, void *);
+    void decodeFinished(void *userData);
+    void scaleFinished(AVFrame *src, QPixmap scaled, void *userData);
+    void seekFinished(int streamIndex, QList<FCFrame> frames, void *userData);
+    void saveFinished(void *userData);
 
 private:
     FCScaler::ScaleResult scale(AVFrame *frame, AVPixelFormat dstFormat, int dstWidth, int dstHeight, uint8_t *scaledData[4] = nullptr, int scaledLineSizes[4] = nullptr);

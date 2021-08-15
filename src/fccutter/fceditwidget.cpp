@@ -29,9 +29,9 @@ FCEditWidget::~FCEditWidget()
 void FCEditWidget::setService(const QSharedPointer<FCService> &service)
 {
 	_service = service;
-	connect(_service.data(), SIGNAL(seekFinished(int, QList<FCFrame>)), this, SLOT(onSeekFinished(int, QList<FCFrame>)));
-	connect(_service.data(), SIGNAL(saveFinished()), this, SLOT(onSaveFinished()));
-	connect(_service.data(), SIGNAL(errorOcurred()), this, SLOT(onErrorOcurred()));
+	connect(_service.data(), SIGNAL(seekFinished(int, QList<FCFrame>, void *)), this, SLOT(onSeekFinished(int, QList<FCFrame>, void *)));
+	connect(_service.data(), SIGNAL(saveFinished(void *)), this, SLOT(onSaveFinished(void *)));
+	connect(_service.data(), SIGNAL(errorOcurred(void *)), this, SLOT(onErrorOcurred(void *)));
 
 	auto streams = _service->streams();
 	ui.audioComboBox->addItem(tr(u8"没有音频"), -1);
@@ -88,7 +88,7 @@ void FCEditWidget::onFastSeekClicked()
 		return;
 	}
 
-	_service->fastSeekAsync(_streamIndex, FCUtil::durationSecs(QTime(0,0), ui.seekEdit->time()));
+	_service->fastSeekAsync(_streamIndex, FCUtil::durationSecs(QTime(0,0), ui.seekEdit->time()), this);
 	_loadingDialog.exec2(tr(u8"跳转..."));
 }
 
@@ -99,7 +99,7 @@ void FCEditWidget::onExactSeekClicked()
 		return;
 	}
 
-	_service->exactSeekAsync(_streamIndex, FCUtil::durationSecs(QTime(0, 0), ui.seekEdit->time()));
+	_service->exactSeekAsync(_streamIndex, FCUtil::durationSecs(QTime(0, 0), ui.seekEdit->time()), this);
 	_loadingDialog.exec2(tr(u8"跳转..."));
 }
 
@@ -137,7 +137,7 @@ void FCEditWidget::onSaveClicked()
 			makeTextFilter(vFilters);
 			makeSubtitleFilter(vFilters);
 			muxEntry.vFilterString = vFilters;
-			_service->saveAsync(muxEntry);
+			_service->saveAsync(muxEntry, this);
 			_loadingDialog.exec2(tr(u8"保存..."));
 		}
 	}
@@ -159,18 +159,21 @@ void FCEditWidget::onSubtitleBtnClicked()
 	}
 }
 
-void FCEditWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames)
+void FCEditWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames, void *userData)
 {
-	_loadingDialog.close();
-	emit seekFinished(streamIndex, frames);
+	if (userData == this)
+	{
+		_loadingDialog.close();
+		emit seekFinished(streamIndex, frames, userData);
+	}
 }
 
-void FCEditWidget::onSaveFinished()
+void FCEditWidget::onSaveFinished(void *userData)
 {
 	_loadingDialog.accept();
 }
 
-void FCEditWidget::onErrorOcurred()
+void FCEditWidget::onErrorOcurred(void *userData)
 {
 	_loadingDialog.close();
 }

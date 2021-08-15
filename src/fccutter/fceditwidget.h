@@ -24,7 +24,7 @@ public Q_SLOTS:
 	void fastSeek(double seconds);
 
 Q_SIGNALS:
-	void seekFinished(int streamIndex, QList<FCFrame> frames);
+	void seekFinished(int streamIndex, QList<FCFrame> frames, void *userData);
 
 private Q_SLOTS:
 	void onFastSeekClicked();
@@ -32,9 +32,9 @@ private Q_SLOTS:
 	void onSaveClicked();
 	void onTextColorClicked();
 	void onSubtitleBtnClicked();
-	void onSeekFinished(int streamIndex, QList<FCFrame> frames);
-	void onSaveFinished();
-	void onErrorOcurred();
+	void onSeekFinished(int streamIndex, QList<FCFrame> frames, void *userData);
+	void onSaveFinished(void *userData);
+	void onErrorOcurred(void *userData);
 
 private:
 	void setService(const QSharedPointer<FCService> &service);

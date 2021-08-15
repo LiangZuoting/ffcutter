@@ -26,12 +26,12 @@ public:
 	void closeFile();
 
 private Q_SLOTS:
-	void onFileOpened(QList<AVStream *> streams);
+	void onFileOpened(QList<AVStream *> streams, void *userData);
 	void selectStreamItem(int streamIndex);
 	void onStartFrameSelected();
 	void onEndFrameSelected();
-	void onErrorOcurred();
-	void onSeekFinished(int streamIndex, QList<FCFrame> frames);
+	void onErrorOcurred(void *userData);
+	void onSeekFinished(int streamIndex, QList<FCFrame> frames, void *userData);
 
 private:
 	Ui::FCMainWidget ui;
