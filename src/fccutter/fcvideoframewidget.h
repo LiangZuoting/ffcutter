@@ -26,12 +26,19 @@ public:
 	int64_t pts() const;
 	double sec() const;
 
+	void beginSelect();
+	void endSelect();
+
 protected:
 	void mouseDoubleClickEvent(QMouseEvent* event);
+	void mousePressEvent(QMouseEvent *event) override;
+	void mouseReleaseEvent(QMouseEvent *event) override;
 
 Q_SIGNALS:
 	void leftDoubleClicked();
 	void rightDoubleClicked();
+	void startSelect(const QPoint &);
+	void stopSelect(const QPoint &);
 
 private Q_SLOTS:
 	void onScaleFinished(AVFrame *src, QPixmap scaled, void *userData);
@@ -43,4 +50,5 @@ private:
 	AVFrame* _frame = nullptr;
 	bool _isStart = false;
 	bool _isEnd = false;
+	bool _selecting{ false };
 };

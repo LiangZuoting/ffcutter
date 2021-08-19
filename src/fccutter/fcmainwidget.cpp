@@ -58,6 +58,32 @@ void FCMainWidget::onFileOpened(QList<AVStream *> streams, void *userData)
 	_opWidget = new FCEditWidget(_service, this);
 	ui.layout->addWidget(_opWidget);
 	connect(_opWidget, SIGNAL(seekFinished(int, QList<FCFrame>, void *)), this, SLOT(onSeekFinished(int, QList<FCFrame>, void *)));
+	connect(_opWidget, &FCEditWidget::delogoClicked, this, [=](int state) 
+		{
+			if (state == Qt::Checked)
+			{
+				_selectType = DelogoType;
+				_vTimelineWidget->beginSelect();
+			}
+			else
+			{
+				_selectType = NoneType;
+				_vTimelineWidget->endSelect();
+			}
+		});
+	connect(_opWidget, &FCEditWidget::masaicClicked, this, [=](int state)
+		{
+			if (state == Qt::Checked)
+			{
+				_selectType = MasaicType;
+				_vTimelineWidget->beginSelect();
+			}
+			else
+			{
+				_selectType = NoneType;
+				_vTimelineWidget->endSelect();
+			}
+		});
 
 	_fiWidget = new FCFileInfoWidget(this);
 	ui.layout->addWidget(_fiWidget);
@@ -91,6 +117,8 @@ void FCMainWidget::selectStreamItem(int streamIndex)
 		_vTimelineWidget = new FCVideoTimelineWidget(this);
 		connect(_vTimelineWidget, SIGNAL(startSelected()), this, SLOT(onStartFrameSelected()));
 		connect(_vTimelineWidget, SIGNAL(endSelected()), this, SLOT(onEndFrameSelected()));
+		connect(_vTimelineWidget, SIGNAL(startSelect(const QPoint &)), this, SLOT(onStartSelect(const QPoint &)));
+		connect(_vTimelineWidget, SIGNAL(stopSelect(const QPoint &)), this, SLOT(onStopSelect(const QPoint &)));
 		ui.layout->addWidget(_vTimelineWidget);
 		_vTimelineWidget->setStreamIndex(streamIndex);
 		_vTimelineWidget->setService(_service);
@@ -133,4 +161,29 @@ void FCMainWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames, void *
 		_vTimelineWidget->appendFrames(frames);
 		_vTimelineWidget->decodeOnce();
 	}
+}
+
+void  FCMainWidget::onStartSelect(const QPoint &pos)
+{
+	if (_selectType == DelogoType)
+	{
+		_opWidget->setDelogoStart(pos);
+	}
+	else if (_selectType == MasaicType)
+	{
+		_opWidget->setMasaicStart(pos);
+	}
+}
+
+void FCMainWidget::onStopSelect(const QPoint &pos)
+{
+	if (_selectType == DelogoType)
+	{
+		_opWidget->setDelogoStop(pos);
+	}
+	else if (_selectType == MasaicType)
+	{
+		_opWidget->setMasaicStop(pos);
+	}
+	_vTimelineWidget->endSelect();
 }

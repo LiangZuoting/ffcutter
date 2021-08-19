@@ -22,9 +22,15 @@ public:
 
 public Q_SLOTS:
 	void fastSeek(double seconds);
+	void setDelogoStart(const QPoint &pos);
+	void setDelogoStop(const QPoint &pos);
+	void setMasaicStart(const QPoint &pos);
+	void setMasaicStop(const QPoint &pos);
 
 Q_SIGNALS:
 	void seekFinished(int streamIndex, QList<FCFrame> frames, void *userData);
+	void delogoClicked(int);
+	void masaicClicked(int);
 
 private Q_SLOTS:
 	void onFastSeekClicked();
@@ -40,6 +46,8 @@ private:
 	void setService(const QSharedPointer<FCService> &service);
 	void loadFontSize();
 	void loadFonts();
+	void makeDelogoFilter(QString &filters);
+	void makeMasaicFilter(QString &filters);
 	void makeCropFilter(QString &filters);
 	void makeScaleFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);
 	void makeFpsFilter(QString &filters, FCMuxEntry &muxEntry, const AVStream *stream);

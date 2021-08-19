@@ -29,6 +29,9 @@ public:
 	double startSec() const;
 	double endSec() const;
 
+	void beginSelect();
+	void endSelect();
+
 	void appendFrames(const QList<FCFrame> &frames);
 
 	void clear();
@@ -46,6 +49,8 @@ private Q_SLOTS:
 Q_SIGNALS:
 	void startSelected();
 	void endSelected();
+	void startSelect(const QPoint &);
+	void stopSelect(const QPoint &);
 
 private:
 	inline static const int MAX_LIST_SIZE = 20;

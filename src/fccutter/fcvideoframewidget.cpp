@@ -86,6 +86,16 @@ double FCVideoFrameWidget::sec() const
 	return _service->tsToSec(_streamIndex, _frame->pts);
 }
 
+void FCVideoFrameWidget::beginSelect()
+{
+	_selecting = true;
+}
+
+void FCVideoFrameWidget::endSelect()
+{
+	_selecting = false;
+}
+
 void FCVideoFrameWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
 	if (event->button() == Qt::LeftButton)
@@ -99,6 +109,38 @@ void FCVideoFrameWidget::mouseDoubleClickEvent(QMouseEvent* event)
 		emit rightDoubleClicked();
 	}
 	QWidget::mouseDoubleClickEvent(event);
+}
+
+void FCVideoFrameWidget::mousePressEvent(QMouseEvent *event)
+{
+	if (event->button() == Qt::LeftButton && _selecting)
+	{
+		auto pos = event->pos();
+		auto w = width();
+		auto h = height();
+		auto imgW = ui.thumbnailLabel->pixmap()->width();
+		auto imgH = ui.thumbnailLabel->pixmap()->height();
+		auto xRatio = _frame->width * 1.0 / imgW;
+		auto yRatio = _frame->height * 1.0 / imgH;
+		QPoint imgPos = { int((pos.x() - (w - imgW)) * xRatio), int((pos.y() - (h - imgH)) * yRatio) };
+		emit startSelect(imgPos);
+	}
+}
+
+void FCVideoFrameWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+	if (event->button() == Qt::LeftButton && _selecting)
+	{
+		auto pos = event->pos();
+		auto w = width();
+		auto h = height();
+		auto imgW = ui.thumbnailLabel->pixmap()->width();
+		auto imgH = ui.thumbnailLabel->pixmap()->height();
+		auto xRatio = _frame->width * 1.0 / imgW;
+		auto yRatio = _frame->height * 1.0 / imgH;
+		QPoint imgPos = { int((pos.x() - (w - imgW)) * xRatio), int((pos.y() - (h - imgH)) * yRatio) };
+		emit stopSelect(imgPos);
+	}
 }
 
 void FCVideoFrameWidget::onScaleFinished(AVFrame *src, QPixmap scaled, void *userData)

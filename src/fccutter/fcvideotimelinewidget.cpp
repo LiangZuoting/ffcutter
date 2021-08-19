@@ -50,6 +50,26 @@ double FCVideoTimelineWidget::endSec() const
 	return 0;
 }
 
+void FCVideoTimelineWidget::beginSelect()
+{
+	auto children = findChildren<FCVideoFrameWidget *>();
+	for (auto child : children)
+	{
+		child->beginSelect();
+	}
+	setCursor(Qt::CrossCursor);
+}
+
+void FCVideoTimelineWidget::endSelect()
+{
+	auto children = findChildren<FCVideoFrameWidget *>();
+	for (auto child : children)
+	{
+		child->endSelect();
+	}
+	setCursor(Qt::ArrowCursor);
+}
+
 void FCVideoTimelineWidget::appendFrames(const QList<FCFrame>& frames)
 {
 	for (auto frame : frames)
@@ -59,6 +79,8 @@ void FCVideoTimelineWidget::appendFrames(const QList<FCFrame>& frames)
 			FCVideoFrameWidget* widget = new FCVideoFrameWidget(this);
 			connect(widget, SIGNAL(leftDoubleClicked()), SLOT(onVideoFrameLeftClicked()));
 			connect(widget, SIGNAL(rightDoubleClicked()), SLOT(onVideoFrameRightClicked()));
+			connect(widget, SIGNAL(startSelect(const QPoint &)), SIGNAL(startSelect(const QPoint &)));
+			connect(widget, SIGNAL(stopSelect(const QPoint &)), SIGNAL(stopSelect(const QPoint &)));
 			ui.timelineLayout->addWidget(widget);
 			widget->setService(_service);
 			widget->setStreamIndex(_streamIndex);

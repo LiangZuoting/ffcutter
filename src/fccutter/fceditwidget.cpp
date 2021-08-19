@@ -17,6 +17,8 @@ FCEditWidget::FCEditWidget(const QSharedPointer<FCService> &service, FCMainWidge
 	connect(ui.saveBtn, SIGNAL(clicked()), this, SLOT(onSaveClicked()));
 	connect(ui.textColorBtn, SIGNAL(clicked()), this, SLOT(onTextColorClicked()));
 	connect(ui.subtitleBtn, SIGNAL(clicked()), this, SLOT(onSubtitleBtnClicked()));
+	connect(ui.delogoBtn, SIGNAL(stateChanged(int)), this, SIGNAL(delogoClicked(int)));
+	connect(ui.masaicBtn, SIGNAL(stateChanged(int)), this, SIGNAL(masaicClicked(int)));
 
 	loadFontSize();
 	loadFonts();
@@ -81,6 +83,34 @@ void FCEditWidget::fastSeek(double seconds)
 	onFastSeekClicked();
 }
 
+void FCEditWidget::setDelogoStart(const QPoint &pos)
+{
+	ui.delogoXEdit->setText(QString::number(pos.x()));
+	ui.delogoYEdit->setText(QString::number(pos.y()));
+}
+
+void FCEditWidget::setDelogoStop(const QPoint &pos)
+{
+	auto w = pos.x() - ui.delogoXEdit->text().toInt();
+	ui.delogoWidthEdit->setText(QString::number(w));
+	auto h = pos.y() - ui.delogoYEdit->text().toInt();
+	ui.delogoHeightEdit->setText(QString::number(h));
+}
+
+void FCEditWidget::setMasaicStart(const QPoint &pos)
+{
+	ui.masaicXEdit->setText(QString::number(pos.x()));
+	ui.masaicYEdit->setText(QString::number(pos.y()));
+}
+
+void FCEditWidget::setMasaicStop(const QPoint &pos)
+{
+	auto w = pos.x() - ui.masaicXEdit->text().toInt();
+	ui.masaicWidthEdit->setText(QString::number(w));
+	auto h = pos.y() - ui.masaicYEdit->text().toInt();
+	ui.masaicHeightEdit->setText(QString::number(h));
+}
+
 void FCEditWidget::onFastSeekClicked()
 {
 	if (_streamIndex < 0)
@@ -131,6 +161,8 @@ void FCEditWidget::onSaveClicked()
 			}
 
 			QString vFilters;
+			makeDelogoFilter(vFilters);
+			makeMasaicFilter(vFilters);
 			makeCropFilter(vFilters);
 			makeScaleFilter(vFilters, muxEntry, stream);
 			makeFpsFilter(vFilters, muxEntry, stream);
@@ -197,6 +229,24 @@ void FCEditWidget::loadFonts()
 		auto filePath = ls[i].absoluteFilePath();
 		QRawFont rawFont(filePath, 10);
 		ui.fontComboBox->addItem(rawFont.familyName(), filePath);
+	}
+}
+
+void FCEditWidget::makeDelogoFilter(QString &filters)
+{
+	if (ui.delogoBtn->isChecked())
+	{
+		appendFilter(filters, QString("delogo=%1:%2:%3:%4").arg(ui.delogoXEdit->text().toInt())
+			.arg(ui.delogoYEdit->text().toInt()).arg(ui.delogoWidthEdit->text().toInt()).arg(ui.delogoHeightEdit->text().toInt()));
+	}
+}
+
+void FCEditWidget::makeMasaicFilter(QString &filters)
+{
+	if (ui.masaicBtn->isChecked())
+	{
+		appendFilter(filters, QString("drawbox=%1:%2:%3:%4:black:t=fill").arg(ui.masaicXEdit->text().toInt())
+			.arg(ui.masaicYEdit->text().toInt()).arg(ui.masaicWidthEdit->text().toInt()).arg(ui.masaicHeightEdit->text().toInt()));
 	}
 }
 

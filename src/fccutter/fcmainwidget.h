@@ -32,8 +32,17 @@ private Q_SLOTS:
 	void onEndFrameSelected();
 	void onErrorOcurred(void *userData);
 	void onSeekFinished(int streamIndex, QList<FCFrame> frames, void *userData);
+	void onStartSelect(const QPoint &pos);
+	void onStopSelect(const QPoint &pos);
 
 private:
+	enum SelectType
+	{
+		NoneType,
+		DelogoType,
+		MasaicType,
+	};
+
 	Ui::FCMainWidget ui;
 	QSharedPointer<FCService> _service;
 	FCFileInfoWidget *_fiWidget = nullptr;
@@ -42,4 +51,5 @@ private:
 	FCSimpleTimelineWidget *_simpleTimelineWidget{ nullptr };
 	int _streamIndex = -1;
 	FCLoadingDialog _loadingDialog;
+	SelectType _selectType{ NoneType };
 };
