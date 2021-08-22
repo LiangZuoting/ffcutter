@@ -47,6 +47,7 @@ public:
 	AVFormatContext* formatContext() const;
 	QList<AVStream*> streams() const;
 	AVStream* stream(int streamIndex) const;
+	double duration(int streamIndex) const;
 
 	double tsToSec(int streamIndex, int64_t timestamp) const;
 	int64_t secToTs(int streamIndex, double seconds) const;

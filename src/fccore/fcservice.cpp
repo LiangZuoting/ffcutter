@@ -120,6 +120,11 @@ QList<AVStream*> FCService::streams() const
 	return _demuxer->streams();
 }
 
+double FCService::duration(int streamIndex) const
+{
+	return _demuxer->duration(streamIndex);
+}
+
 void FCService::fastSeekAsync(int streamIndex, double seconds, void *userData)
 {
 	QMutexLocker _(&_mutex);

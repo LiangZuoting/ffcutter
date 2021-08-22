@@ -138,6 +138,15 @@ AVStream* FCDemuxer::stream(int streamIndex) const
 	return nullptr;
 }
 
+double FCDemuxer::duration(int streamIndex) const
+{
+	if (auto s = stream(streamIndex); s && s->duration != AV_NOPTS_VALUE)
+	{
+		return (double)s->duration * av_q2d(s->time_base) * 1000;
+	}
+	return (double)_formatContext->duration / AV_TIME_BASE * 1000;
+}
+
 double FCDemuxer::tsToSec(int streamIndex, int64_t timestamp) const
 {
 	auto tb = stream(streamIndex)->time_base;

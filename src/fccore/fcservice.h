@@ -43,6 +43,12 @@ public:
     AVFormatContext* formatContext() const;
     AVStream* stream(int streamIndex) const;
     QList<AVStream*> streams() const;
+    /// <summary>
+    /// duration of stream in milliseconds
+    /// </summary>
+    /// <param name="streamIndex"></param>
+    /// <returns></returns>
+    double duration(int streamIndex) const;
 
     void fastSeekAsync(int streamIndex, double seconds, void *userData);
     void exactSeekAsync(int streamIndex, double seconds, void *userData);

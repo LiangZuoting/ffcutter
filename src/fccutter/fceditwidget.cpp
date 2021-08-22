@@ -55,12 +55,8 @@ void FCEditWidget::setCurrentStream(int streamIndex)
 	ui.heightEdit->setText(QString::number(stream->codecpar->height));
 	int fps = av_q2d(stream->avg_frame_rate) + 0.5;
 	ui.fpsEdit->setText(QString::number(fps));
-	if (stream->duration >= 0)
-	{
-		double msecs = (double)stream->duration * av_q2d(stream->time_base) * 1000;
-		QTime t = QTime(0, 0).addMSecs(msecs);
-		ui.endSecEdit->setTime(t);
-	}
+	QTime t = QTime(0, 0).addMSecs(_service->duration(streamIndex));
+	ui.endSecEdit->setTime(t);
 }
 
 void FCEditWidget::setStartSec(double startSec)

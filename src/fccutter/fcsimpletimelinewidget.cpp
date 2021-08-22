@@ -24,7 +24,7 @@ void FCSimpleTimelineWidget::setCurrentStream(int streamIndex)
 {
 	_streamIndex = streamIndex;
 	auto stream = _service->stream(streamIndex);
-	_duration = stream->duration * av_q2d(stream->time_base);
+	_duration = _service->duration(streamIndex) / 1000;
 }
 
 void FCSimpleTimelineWidget::paintEvent(QPaintEvent *event)
