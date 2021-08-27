@@ -2,29 +2,44 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QMouseEvent>
+#include <QTimer>
 #include <fcservice.h>
 #include "fcvideoframewidget.h"
 
-FCSimpleTimelineWidget::FCSimpleTimelineWidget(const QSharedPointer<FCService> &service, QWidget *parent)
+FCSimpleTimelineWidget::FCSimpleTimelineWidget(QWidget *parent)
 	: QWidget(parent)
-	, _service(service)
 {
 	ui.setupUi(this);
 	setMouseTracking(true);
-
-	connect(_service.data(), SIGNAL(seekFinished(int, QList<FCFrame>, void *)), this, SLOT(onSeekFinished(int, QList<FCFrame>, void *)));
-	connect(_service.data(), SIGNAL(frameDeocded(QList<FCFrame>, void *)), this, SLOT(onFrameDecoded(QList<FCFrame>, void *)));
 }
 
 FCSimpleTimelineWidget::~FCSimpleTimelineWidget()
 {
 }
 
+void FCSimpleTimelineWidget::loadFile(const QString &filePath)
+{
+	_service.reset(new FCService());
+	connect(_service.data(), &FCService::fileOpened, this, [=]() 
+		{
+			QTimer::singleShot(0, this, [=]() 
+				{
+					setCurrentStream(_streamIndex);
+				});
+		});
+	connect(_service.data(), SIGNAL(seekFinished(int, QList<FCFrame>, void *)), this, SLOT(onSeekFinished(int, QList<FCFrame>, void *)));
+	connect(_service.data(), SIGNAL(frameDeocded(QList<FCFrame>, void *)), this, SLOT(onFrameDecoded(QList<FCFrame>, void *)));
+	
+	_service->openFileAsync(filePath, this);
+}
+
 void FCSimpleTimelineWidget::setCurrentStream(int streamIndex)
 {
 	_streamIndex = streamIndex;
-	auto stream = _service->stream(streamIndex);
-	_duration = _service->duration(streamIndex) / 1000;
+	if (_service)
+	{
+		_duration = _service->duration(streamIndex) / 1000;
+	}
 }
 
 void FCSimpleTimelineWidget::paintEvent(QPaintEvent *event)
@@ -39,11 +54,14 @@ void FCSimpleTimelineWidget::paintEvent(QPaintEvent *event)
 
 void FCSimpleTimelineWidget::mouseMoveEvent(QMouseEvent *event)
 {
-	_frameWidget.reset();
+	if (_service)
+	{
+		_frameWidget.reset();
 
-	_x = event->x();
-	_seekSeconds = _duration * _x / width();
-	_service->fastSeekAsync(_streamIndex, _seekSeconds, this);
+		_x = event->x();
+		_seekSeconds = _duration * _x / width();
+		_service->fastSeekAsync(_streamIndex, _seekSeconds, this);
+	}
 }
 
 void FCSimpleTimelineWidget::mouseDoubleClickEvent(QMouseEvent *event)
@@ -65,7 +83,7 @@ void FCSimpleTimelineWidget::leaveEvent(QEvent *event)
 
 void FCSimpleTimelineWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames, void *userData)
 {
-	if (userData == this && _cursorIn)
+	if (userData == this && _cursorIn && _service)
 	{
 		_service->decodeOnePacketAsync(_streamIndex, this);
 	}
@@ -73,7 +91,7 @@ void FCSimpleTimelineWidget::onSeekFinished(int streamIndex, QList<FCFrame> fram
 
 void FCSimpleTimelineWidget::onFrameDecoded(QList<FCFrame> frames, void *userData)
 {
-	if (userData == this && _cursorIn)
+	if (userData == this && _cursorIn && _service)
 	{
 		_frameWidget.reset(new FCVideoFrameWidget());
 		_frameWidget->setWindowFlag(Qt::ToolTip);

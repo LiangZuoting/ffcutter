@@ -83,10 +83,10 @@ private:
     QSharedPointer<FCScaler> getScaler(AVFrame *frame, int dstWidth, int dstHeight, AVPixelFormat dstFormat);
     void clearFrames(QList<FCFrame> &frames);
 
-    QMutex _mutex;
+    mutable QMutex _mutex;
     int _lastError = 0;
     QString _lastErrorString;
     QThreadPool *_threadPool = nullptr;
-    QSharedPointer<FCDemuxer> _demuxer = nullptr;
+    QSharedPointer<FCDemuxer> _demuxer;
     QVector<QSharedPointer<FCScaler>> _vecScaler;
 };

@@ -52,4 +52,5 @@ private:
 	int _streamIndex = -1;
 	FCLoadingDialog _loadingDialog;
 	SelectType _selectType{ NoneType };
+	QString _filePath;
 };

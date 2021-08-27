@@ -12,8 +12,10 @@ class FCSimpleTimelineWidget : public QWidget
 	Q_OBJECT
 
 public:
-	FCSimpleTimelineWidget(const QSharedPointer<FCService> &service, QWidget *parent = Q_NULLPTR);
+	FCSimpleTimelineWidget(QWidget *parent = Q_NULLPTR);
 	~FCSimpleTimelineWidget();
+
+	void loadFile(const QString &filePath);
 
 	void setCurrentStream(int streamIndex);
 

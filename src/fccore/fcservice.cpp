@@ -33,14 +33,11 @@ FCService::~FCService()
 
 void FCService::openFileAsync(const QString& filePath, void *userData)
 {
-	QMutexLocker _(&_mutex);
-
-	_demuxer.reset(new FCDemuxer());
-
 	QtConcurrent::run(_threadPool, [&, filePath]() {
 		QMutexLocker _(&_mutex);
 		QTime time;
 		time.start();
+		_demuxer.reset(new FCDemuxer());
 		_lastError = _demuxer->open(filePath);
 		qDebug() << "open file time " << time.elapsed();
 		if (_lastError < 0)
@@ -107,27 +104,35 @@ void FCService::decodePacketsAsync(int streamIndex, int count, void *userData)
 
 AVFormatContext* FCService::formatContext() const
 {
+	QMutexLocker _(&_mutex);
 	return _demuxer->formatContext();
 }
 
 AVStream* FCService::stream(int streamIndex) const
 {
-	return _demuxer->stream(streamIndex);
+	QMutexLocker _(&_mutex);
+	return _demuxer ? _demuxer->stream(streamIndex) : nullptr;
 }
 
 QList<AVStream*> FCService::streams() const
 {
-	return _demuxer->streams();
+	QMutexLocker _(&_mutex);
+	return _demuxer ? _demuxer->streams() : QList<AVStream *>();
 }
 
 double FCService::duration(int streamIndex) const
 {
-	return _demuxer->duration(streamIndex);
+	QMutexLocker _(&_mutex);
+	return _demuxer ? _demuxer->duration(streamIndex) : 0;
 }
 
 void FCService::fastSeekAsync(int streamIndex, double seconds, void *userData)
 {
 	QMutexLocker _(&_mutex);
+	if (!_demuxer)
+	{
+		return;
+	}
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
 		if ((_lastError = _demuxer->fastSeek(streamIndex, _demuxer->secToTs(streamIndex, seconds))) < 0)
@@ -269,6 +274,7 @@ QPair<int, QString> FCService::lastError()
 
 double FCService::tsToSec(int streamIndex, int64_t timestamp)
 {
+	QMutexLocker _(&_mutex);
 	return _demuxer->tsToSec(streamIndex, timestamp);
 }
 

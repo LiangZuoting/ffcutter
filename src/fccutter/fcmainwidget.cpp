@@ -20,15 +20,18 @@ void FCMainWidget::openFile(const QString& filePath)
 {
 	closeFile();
 
+	_filePath = filePath;
 	_service.reset(new FCService());
 	connect(_service.data(), SIGNAL(fileOpened(QList<AVStream *>, void *)), this, SLOT(onFileOpened(QList<AVStream *>, void *)));
 	connect(_service.data(), SIGNAL(errorOcurred(void *)), this, SLOT(onErrorOcurred(void *)));
 	_service->openFileAsync(filePath, this);
+
 	_loadingDialog.exec2(tr(u8"打开文件..."));
 }
 
 void FCMainWidget::closeFile()
 {
+	_filePath.clear();
 	if (_fiWidget)
 	{
 		delete _fiWidget;
@@ -125,9 +128,10 @@ void FCMainWidget::selectStreamItem(int streamIndex)
 		_vTimelineWidget->clear();
 		_vTimelineWidget->decodeOnce();
 
-		_simpleTimelineWidget = new FCSimpleTimelineWidget(_service, this);
+		_simpleTimelineWidget = new FCSimpleTimelineWidget(this);
 		connect(_simpleTimelineWidget, SIGNAL(seekRequest(double)), _opWidget, SLOT(fastSeek(double)));
 		ui.layout->addWidget(_simpleTimelineWidget);
+		_simpleTimelineWidget->loadFile(_filePath);
 		_simpleTimelineWidget->setCurrentStream(streamIndex);
 	}
 }
