@@ -56,6 +56,15 @@ void FCMainWidget::closeFile()
 	_service.reset();
 }
 
+void FCMainWidget::mousePressEvent(QMouseEvent *event)
+{
+	if (event->buttons() & Qt::RightButton)
+	{
+		_selectType = NoneType;
+		_vTimelineWidget->endSelect();
+	}
+}
+
 void FCMainWidget::onFileOpened(QList<AVStream *> streams, void *userData)
 {
 	_opWidget = new FCEditWidget(_service, this);

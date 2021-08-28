@@ -33,6 +33,7 @@ FCService::~FCService()
 
 void FCService::openFileAsync(const QString& filePath, void *userData)
 {
+	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [&, filePath]() {
 		QMutexLocker _(&_mutex);
 		QTime time;
@@ -105,7 +106,7 @@ void FCService::decodePacketsAsync(int streamIndex, int count, void *userData)
 AVFormatContext* FCService::formatContext() const
 {
 	QMutexLocker _(&_mutex);
-	return _demuxer->formatContext();
+	return _demuxer ? _demuxer->formatContext() : nullptr;
 }
 
 AVStream* FCService::stream(int streamIndex) const

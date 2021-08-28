@@ -136,7 +136,7 @@ void FCEditWidget::onSaveClicked()
 	auto aStream = _service->stream(aStreamIndex);
 	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
 	{
-		auto filePath = QFileDialog::getSaveFileName(this, tr("保存文件"), QString());
+		auto filePath = QFileDialog::getSaveFileName(this, tr("保存文件"), QString(), "jpg (*.jpg);;webp (*.webp);;gif (*.gif);;mp4 (*.mp4)");
 		if (!filePath.isEmpty())
 		{
 			FCMuxEntry muxEntry;

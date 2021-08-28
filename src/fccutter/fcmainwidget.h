@@ -25,6 +25,9 @@ public:
 	void openFile(const QString& filePath);
 	void closeFile();
 
+protected:
+	void mousePressEvent(QMouseEvent *event) override;
+
 private Q_SLOTS:
 	void onFileOpened(QList<AVStream *> streams, void *userData);
 	void selectStreamItem(int streamIndex);

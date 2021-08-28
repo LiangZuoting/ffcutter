@@ -67,6 +67,15 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 					FCUtil::printAVError(ret, "av_opt_set_int");
 				}
 			}
+			// for animated webp, set loop to 0 to playback infinitely.
+			if (codecId == AV_CODEC_ID_WEBP)
+			{
+				if (ret = av_opt_set_int(_formatContext, "loop", 0, AV_OPT_SEARCH_CHILDREN); ret)
+				{
+					FCUtil::printAVError(ret, "av_opt_set_int");
+				}
+			}
+
 			if (ret = avcodec_open2(_context, codec, nullptr); ret)
 			{
 				FCUtil::printAVError(ret, "avcodec_open2");
