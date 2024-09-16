@@ -70,7 +70,7 @@ void FCSimpleTimelineWidget::mouseDoubleClickEvent(QMouseEvent *event)
 	emit seekRequest(pos);
 }
 
-void FCSimpleTimelineWidget::enterEvent(QEvent *event)
+void FCSimpleTimelineWidget::enterEvent(QEnterEvent*event)
 {
 	_cursorIn = true;
 }
@@ -98,7 +98,7 @@ void FCSimpleTimelineWidget::onFrameDecoded(QList<FCFrame> frames, void *userDat
 		_frameWidget->setService(_service);
 		_frameWidget->setStreamIndex(_streamIndex);
 		_frameWidget->setFrame(frames.front().frame);
-		auto pos = mapToGlobal({ _x, 0 });
+		auto pos = mapToGlobal(QPoint{ _x, 0 });
 		_frameWidget->move(pos.x() - _frameWidget->width() / 2, pos.y() - _frameWidget->height());
 		_frameWidget->show();
 	}

@@ -118,8 +118,8 @@ void FCVideoFrameWidget::mousePressEvent(QMouseEvent *event)
 		auto pos = event->pos();
 		auto w = width();
 		auto h = height();
-		auto imgW = ui.thumbnailLabel->pixmap()->width();
-		auto imgH = ui.thumbnailLabel->pixmap()->height();
+		auto imgW = ui.thumbnailLabel->pixmap().width();
+		auto imgH = ui.thumbnailLabel->pixmap().height();
 		auto xRatio = _frame->width * 1.0 / imgW;
 		auto yRatio = _frame->height * 1.0 / imgH;
 		QPoint imgPos = { int((pos.x() - (w - imgW)) * xRatio), int((pos.y() - (h - imgH)) * yRatio) };
@@ -134,8 +134,8 @@ void FCVideoFrameWidget::mouseReleaseEvent(QMouseEvent *event)
 		auto pos = event->pos();
 		auto w = width();
 		auto h = height();
-		auto imgW = ui.thumbnailLabel->pixmap()->width();
-		auto imgH = ui.thumbnailLabel->pixmap()->height();
+		auto imgW = ui.thumbnailLabel->pixmap().width();
+		auto imgH = ui.thumbnailLabel->pixmap().height();
 		auto xRatio = _frame->width * 1.0 / imgW;
 		auto yRatio = _frame->height * 1.0 / imgH;
 		QPoint imgPos = { int((pos.x() - (w - imgW)) * xRatio), int((pos.y() - (h - imgH)) * yRatio) };

@@ -36,11 +36,8 @@ void FCService::openFileAsync(const QString& filePath, void *userData)
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [&, filePath]() {
 		QMutexLocker _(&_mutex);
-		QTime time;
-		time.start();
 		_demuxer.reset(new FCDemuxer());
 		_lastError = _demuxer->open(filePath);
-		qDebug() << "open file time " << time.elapsed();
 		if (_lastError < 0)
 		{
 			emit errorOcurred(userData);
