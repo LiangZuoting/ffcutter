@@ -45,6 +45,7 @@ private Q_SLOTS:
 	void onDecodeFinished(void *userData);
 	void onVideoFrameLeftClicked();
 	void onVideoFrameRightClicked();
+	void onPlayClicked();
 
 Q_SIGNALS:
 	void startSelected();
@@ -53,8 +54,6 @@ Q_SIGNALS:
 	void stopSelect(const QPoint &);
 
 private:
-	inline static const int MAX_LIST_SIZE = 20;
-
 	Ui::FCVideoTimelineWidget ui;
 	QSharedPointer<FCService> _service;
 	int _streamIndex = -1;

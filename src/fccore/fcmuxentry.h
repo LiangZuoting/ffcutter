@@ -6,6 +6,7 @@ extern "C"
 {
 #include <libavutil/pixfmt.h>
 #include <libavutil/samplefmt.h>
+#include <libavutil/channel_layout.h>
 }
 
 struct FCMuxEntry
@@ -27,8 +28,7 @@ struct FCMuxEntry
 	AVSampleFormat sampleFormat = AV_SAMPLE_FMT_NONE;
 	int aBitrate = 0;
 	int sampleRate = 0;
-	int channels = 0;
-	uint64_t channel_layout = 0;
+	AVChannelLayout* channel_layout{};
 	QString aFilterString;
 };
 

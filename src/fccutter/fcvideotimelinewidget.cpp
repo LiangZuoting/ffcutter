@@ -2,12 +2,15 @@
 #include <QDebug>
 #include <QScrollBar>
 
+#include "fcplaydialog.h"
+
 FCVideoTimelineWidget::FCVideoTimelineWidget(QWidget *parent)
 	: QWidget(parent)
 {
 	ui.setupUi(this);
 
 	connect(ui.forwardBtn, SIGNAL(clicked()), this, SLOT(onForwardBtnClicked()));
+	connect(ui.playButton, &QToolButton::clicked, this, &FCVideoTimelineWidget::onPlayClicked);
 }
 
 FCVideoTimelineWidget::~FCVideoTimelineWidget()
@@ -28,7 +31,7 @@ void FCVideoTimelineWidget::setService(const QSharedPointer<FCService>& service)
 
 void FCVideoTimelineWidget::decodeOnce()
 {
-	_service->decodePacketsAsync(_streamIndex, MAX_LIST_SIZE, this);
+	_service->decodePacketsAsync(_streamIndex, 3 * 1000 / _service->fps(_streamIndex), this);
 	_loadingDialog.exec2(tr(u8"½âÂë..."));
 }
 
@@ -157,6 +160,21 @@ void FCVideoTimelineWidget::onVideoFrameRightClicked()
 			c->setEnd(c == widget);
 		}
 	}
+}
+
+void FCVideoTimelineWidget::onPlayClicked()
+{
+	QVector<QPixmap> frames;
+	for (auto frameWidget : findChildren<FCVideoFrameWidget*>())
+	{
+		frames.push_back(frameWidget->pixmap());
+	}
+
+	auto stream = _service->stream(_streamIndex);
+	int fps = av_q2d(stream->avg_frame_rate) + 0.5;
+
+	FCPlayDialog dialog;
+	dialog.play(frames, fps);
 }
 
 void FCVideoTimelineWidget::clear()

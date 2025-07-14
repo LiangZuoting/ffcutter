@@ -71,6 +71,11 @@ void FCVideoFrameWidget::setEnd(bool select)
 	}
 }
 
+QPixmap FCVideoFrameWidget::pixmap() const
+{
+	return ui.thumbnailLabel->pixmap(Qt::ReturnByValue);
+}
+
 AVFrame* FCVideoFrameWidget::frame() const
 {
 	return _frame;

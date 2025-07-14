@@ -49,6 +49,7 @@ public:
     /// <param name="streamIndex"></param>
     /// <returns></returns>
     double duration(int streamIndex) const;
+    int fps(int streamIndex) const;
 
     void fastSeekAsync(int streamIndex, double seconds, void *userData);
     void exactSeekAsync(int streamIndex, double seconds, void *userData);

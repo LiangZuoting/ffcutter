@@ -81,7 +81,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>997</width>
+        <width>994</width>
         <height>238</height>
        </rect>
       </property>
@@ -121,17 +121,37 @@
     </widget>
    </item>
    <item>
-    <widget class="QToolButton" name="forwardBtn">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>0</number>
      </property>
-     <property name="text">
-      <string>&gt;</string>
+     <property name="leftMargin">
+      <number>0</number>
      </property>
-    </widget>
+     <item>
+      <widget class="QToolButton" name="playButton">
+       <property name="toolTip">
+        <string>播放</string>
+       </property>
+       <property name="text">
+        <string>P</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="forwardBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>&gt;</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

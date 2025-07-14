@@ -48,9 +48,8 @@ void FCUtil::printAVFilterGraph(const QString &filePath, AVFilterGraph *graph)
 							.toUtf8());
 				}
 				else if (link->type == AVMEDIA_TYPE_AUDIO) {
-					char buf[255];
-					av_get_channel_layout_string(buf, sizeof(buf), -1,
-						link->channel_layout);
+					char buf[255]{0};
+					av_channel_layout_describe(&link->ch_layout, buf, 255);
 					file.write(QString("fmt:%1 sr:%2 cl:%3 tb:%4/%5")
 								.arg(av_get_sample_fmt_name((AVSampleFormat)link->format))
 								.arg(link->sample_rate).arg(buf).arg(link->time_base.num)

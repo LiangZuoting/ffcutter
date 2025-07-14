@@ -43,7 +43,7 @@ int FCAudioStreamWriter::createFilter()
 		filters.append(',');
 	}
 	char layout[100] = { 0 };
-	av_get_channel_layout_string(layout, 100, dstStream->codecpar->channels, dstStream->codecpar->channel_layout);
+	av_channel_layout_describe(&dstStream->codecpar->ch_layout, layout, 100);
 	filters.append(QString("aresample=%3,aformat=sample_fmts=%1:channel_layouts=%2")
 		.arg(av_get_sample_fmt_name((AVSampleFormat)dstStream->codecpar->format))
 		.arg(layout).arg(dstStream->codecpar->sample_rate));
@@ -52,11 +52,20 @@ int FCAudioStreamWriter::createFilter()
 	params.srcTimeBase = srcStream->time_base;
 	params.srcSampleFormat = (AVSampleFormat)srcStream->codecpar->format;
 	params.srcSampleRate = srcStream->codecpar->sample_rate;
-	params.srcChannelLayout = srcStream->codecpar->channel_layout;
+	params.srcChannelLayout = getChannelLayout(srcStream->codecpar->ch_layout);
 	params.dstSampleFormat = (AVSampleFormat)dstStream->codecpar->format;
 	params.dstSampleRate = dstStream->codecpar->sample_rate;
-	params.dstChannelLayout = dstStream->codecpar->channel_layout;
+	params.dstChannelLayout = getChannelLayout(dstStream->codecpar->ch_layout);
 	params.filterString = filters;
 	params.frameSize = _muxer.fixedAudioFrameSize();
 	return _filter->create(params);
+}
+
+uint64_t FCAudioStreamWriter::getChannelLayout(const AVChannelLayout& layout)
+{
+	if (layout.order == AV_CHANNEL_ORDER_NATIVE)
+	{
+		return layout.u.mask;
+	}
+	return -1;
 }

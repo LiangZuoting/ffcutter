@@ -152,8 +152,7 @@ void FCEditWidget::onSaveClicked()
 				muxEntry.sampleFormat = (AVSampleFormat)aStream->codecpar->format;
 				muxEntry.aBitrate = aStream->codecpar->bit_rate;
 				muxEntry.sampleRate = aStream->codecpar->sample_rate;
-				muxEntry.channel_layout = aStream->codecpar->channel_layout;
-				muxEntry.channels = aStream->codecpar->channels;
+				muxEntry.channel_layout = &aStream->codecpar->ch_layout;
 			}
 
 			QString vFilters;
