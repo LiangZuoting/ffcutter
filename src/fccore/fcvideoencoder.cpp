@@ -39,7 +39,6 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 					break;
 				}
 			}
-			_context->framerate = { 1, muxEntry.fps };
 			/*
 			* H264 codec 不能 set 这个 flag，否则文件不能解析；
 			* gif 必须 set 这个 flag，否则图像效果不对。
