@@ -12,5 +12,4 @@ public:
     
 private:
     int createFilter();
-    static uint64_t getChannelLayout(const AVChannelLayout& layout);
 };

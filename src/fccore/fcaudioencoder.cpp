@@ -46,6 +46,10 @@ int FCAudioEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 				break;
 			}
 		}
+		if (!av_channel_layout_check(&_context->ch_layout))
+		{
+			av_channel_layout_default(&_context->ch_layout, 2);
+		}
 		if (_formatContext->oformat->flags & AVFMT_GLOBALHEADER)
 		{
 			_context->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
