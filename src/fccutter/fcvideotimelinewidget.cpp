@@ -170,8 +170,7 @@ void FCVideoTimelineWidget::onPlayClicked()
 		frames.push_back(frameWidget->pixmap());
 	}
 
-	auto stream = _service->stream(_streamIndex);
-	int fps = av_q2d(stream->avg_frame_rate) + 0.5;
+	int fps = _service->fps(_streamIndex);
 
 	FCPlayDialog dialog;
 	dialog.play(frames, fps);

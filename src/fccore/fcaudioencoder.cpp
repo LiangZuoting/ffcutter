@@ -40,9 +40,9 @@ int FCAudioEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 		for (int i = 0; i < numOfConfigs; ++i)
 		{
 			auto layout = configs[i];
-			if (!av_channel_layout_compare(&layout, muxEntry.channel_layout))
+			if (!av_channel_layout_compare(&layout, muxEntry.channelLayout))
 			{
-				ret = av_channel_layout_copy(&_context->ch_layout, muxEntry.channel_layout);
+				ret = av_channel_layout_copy(&_context->ch_layout, muxEntry.channelLayout);
 				break;
 			}
 		}

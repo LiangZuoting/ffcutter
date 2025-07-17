@@ -200,11 +200,9 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry, void *userData)
 		auto vStartPts = _demuxer->secToTs(entry.vStreamIndex, entry.startSec);
 		_demuxer->fastSeek(entry.vStreamIndex, vStartPts);
 
-		AVStream* demuxAudioStream = _demuxer->stream(entry.aStreamIndex);
-		auto demuxVideoStream = _demuxer->stream(entry.vStreamIndex);
 		if (entry.fps <= 0)
 		{
-			entry.fps = av_q2d(demuxVideoStream->avg_frame_rate) + 0.5;
+			entry.fps = fps(entry.vStreamIndex);
 		}
 
 		FCMuxer muxer;

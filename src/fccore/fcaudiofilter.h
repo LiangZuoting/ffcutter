@@ -5,10 +5,10 @@ struct FCAudioFilterParameters : FCFilterParameters
 {
 	AVSampleFormat srcSampleFormat = AV_SAMPLE_FMT_NONE;
 	int srcSampleRate = 0;
-	AVChannelLayout* srcChannelLayout{nullptr};
+	char srcChannelLayout[64]{0};
 	AVSampleFormat dstSampleFormat = AV_SAMPLE_FMT_NONE;
 	int dstSampleRate = 0;
-	AVChannelLayout* dstChannelLayout{nullptr};
+	char dstChannelLayout[64]{0};
 	int frameSize = 0;
 };
 

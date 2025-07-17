@@ -53,7 +53,7 @@ void FCEditWidget::setCurrentStream(int streamIndex)
 	auto stream = _service->stream(streamIndex);
 	ui.widthEdit->setText(QString::number(stream->codecpar->width));
 	ui.heightEdit->setText(QString::number(stream->codecpar->height));
-	int fps = av_q2d(stream->avg_frame_rate) + 0.5;
+	int fps = _service->fps(streamIndex);
 	ui.fpsEdit->setText(QString::number(fps));
 	QTime t = QTime(0, 0).addMSecs(_service->duration(streamIndex));
 	ui.endSecEdit->setTime(t);
@@ -152,7 +152,7 @@ void FCEditWidget::onSaveClicked()
 				muxEntry.sampleFormat = (AVSampleFormat)aStream->codecpar->format;
 				muxEntry.aBitrate = aStream->codecpar->bit_rate;
 				muxEntry.sampleRate = aStream->codecpar->sample_rate;
-				muxEntry.channel_layout = &aStream->codecpar->ch_layout;
+				muxEntry.channelLayout = &aStream->codecpar->ch_layout;
 			}
 
 			QString vFilters;

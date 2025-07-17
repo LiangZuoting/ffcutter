@@ -28,7 +28,7 @@ struct FCMuxEntry
 	AVSampleFormat sampleFormat = AV_SAMPLE_FMT_NONE;
 	int aBitrate = 0;
 	int sampleRate = 0;
-	AVChannelLayout* channel_layout{};
+	AVChannelLayout* channelLayout{};
 	QString aFilterString;
 };
 

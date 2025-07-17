@@ -52,10 +52,10 @@ int FCAudioStreamWriter::createFilter()
 	params.srcTimeBase = srcStream->time_base;
 	params.srcSampleFormat = (AVSampleFormat)srcStream->codecpar->format;
 	params.srcSampleRate = srcStream->codecpar->sample_rate;
-	params.srcChannelLayout = &srcStream->codecpar->ch_layout;
+	av_channel_layout_describe(&srcStream->codecpar->ch_layout, params.srcChannelLayout, sizeof(params.srcChannelLayout));
 	params.dstSampleFormat = (AVSampleFormat)dstStream->codecpar->format;
 	params.dstSampleRate = dstStream->codecpar->sample_rate;
-	params.dstChannelLayout = &dstStream->codecpar->ch_layout;
+	av_channel_layout_describe(&dstStream->codecpar->ch_layout, params.dstChannelLayout, sizeof(params.dstChannelLayout));
 	params.filterString = filters;
 	params.frameSize = _muxer.fixedAudioFrameSize();
 	return _filter->create(params);
