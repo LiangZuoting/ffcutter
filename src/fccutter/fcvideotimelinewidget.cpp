@@ -186,10 +186,8 @@ void FCVideoTimelineWidget::onPlayClicked()
 		frames.push_back(frameWidget->pixmap());
 	}
 
-	int fps = _service->fps(_videoStreamIndex);
-
 	FCPlayDialog dialog;
-	dialog.play(_audioFrames, frames, fps);
+	dialog.play(_audioFrames, frames);
 }
 
 void FCVideoTimelineWidget::clear()
