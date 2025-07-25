@@ -38,7 +38,7 @@ public:
     /// <returns></returns>
     void openFileAsync(const QString& filePath, void *userData);
     void decodeOnePacketAsync(int streamIndex, void *userData);
-    void decodePacketsAsync(int streamIndex, int count, void *userData);
+    void decodePacketsAsync(const QVector<int>& streams, int count, void *userData);
 
     AVFormatContext* formatContext() const;
     AVStream* stream(int streamIndex) const;

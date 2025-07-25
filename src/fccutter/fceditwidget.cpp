@@ -19,7 +19,10 @@ FCEditWidget::FCEditWidget(const QSharedPointer<FCService> &service, FCMainWidge
 	connect(ui.subtitleBtn, SIGNAL(clicked()), this, SLOT(onSubtitleBtnClicked()));
 	connect(ui.delogoBtn, SIGNAL(stateChanged(int)), this, SIGNAL(delogoClicked(int)));
 	connect(ui.masaicBtn, SIGNAL(stateChanged(int)), this, SIGNAL(masaicClicked(int)));
-
+	connect(ui.audioComboBox, &QComboBox::currentTextChanged, this, [this]
+		{
+			emit audioStreamChanged(ui.audioComboBox->currentData().toInt());
+		});
 	loadFontSize();
 	loadFonts();
 }

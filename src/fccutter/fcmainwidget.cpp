@@ -1,4 +1,7 @@
 #include "fcmainwidget.h"
+
+#include <qaudiodeviceinfo.h>
+#include <QAudioOutput>
 #include <QTextCodec>
 #include <QDebug>
 #include <libavutil/error.h>
@@ -10,6 +13,20 @@ FCMainWidget::FCMainWidget(QWidget *parent)
 	, _loadingDialog(this)
 {
 	ui.setupUi(this);
+
+	QAudioFormat fmt;
+	fmt.setCodec("audio/pcm");
+	fmt.setSampleRate(48000);
+	fmt.setChannelCount(2);
+	fmt.setSampleSize(8);
+	fmt.setByteOrder(QAudioFormat::LittleEndian);
+	fmt.setSampleType(QAudioFormat::Float);
+
+	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+	if (info.isFormatSupported(fmt))
+	{
+		auto audio = new QAudioOutput(fmt, this);
+	}
 }
 
 FCMainWidget::~FCMainWidget()
@@ -96,6 +113,13 @@ void FCMainWidget::onFileOpened(QList<AVStream *> streams, void *userData)
 				_vTimelineWidget->endSelect();
 			}
 		});
+	connect(_opWidget, &FCEditWidget::audioStreamChanged, this, [=](int streamIndex)
+		{
+			if (_vTimelineWidget)
+			{
+				_vTimelineWidget->setAudioStreamIndex(streamIndex);
+			}
+		});
 
 	_fiWidget = new FCFileInfoWidget(this);
 	ui.layout->addWidget(_fiWidget);
@@ -115,11 +139,11 @@ void FCMainWidget::selectStreamItem(int streamIndex)
 	auto stream = _service->stream(streamIndex);
 	if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
 	{
-		if (_vTimelineWidget && _vTimelineWidget->streamIndex() == _streamIndex)
+		if (_vTimelineWidget && _vTimelineWidget->videoStreamIndex() == _streamIndex)
 		{
 			return;
 		}
-		if (_vTimelineWidget && _vTimelineWidget->streamIndex() != _streamIndex)
+		if (_vTimelineWidget && _vTimelineWidget->videoStreamIndex() != _streamIndex)
 		{
 			delete _vTimelineWidget;
 			_vTimelineWidget = nullptr;
@@ -132,7 +156,7 @@ void FCMainWidget::selectStreamItem(int streamIndex)
 		connect(_vTimelineWidget, SIGNAL(startSelect(const QPoint &)), this, SLOT(onStartSelect(const QPoint &)));
 		connect(_vTimelineWidget, SIGNAL(stopSelect(const QPoint &)), this, SLOT(onStopSelect(const QPoint &)));
 		ui.layout->addWidget(_vTimelineWidget);
-		_vTimelineWidget->setStreamIndex(streamIndex);
+		_vTimelineWidget->setVideoStreamIndex(streamIndex);
 		_vTimelineWidget->setService(_service);
 		_vTimelineWidget->clear();
 		_vTimelineWidget->decodeOnce();
@@ -168,7 +192,7 @@ void FCMainWidget::onErrorOcurred(void *userData)
 
 void FCMainWidget::onSeekFinished(int streamIndex, QList<FCFrame> frames, void *userData)
 {
-	if (userData == _opWidget && _vTimelineWidget->streamIndex() == streamIndex)
+	if (userData == _opWidget && _vTimelineWidget->videoStreamIndex() == streamIndex)
 	{
 		_vTimelineWidget->clear();
 		_vTimelineWidget->appendFrames(frames);

@@ -76,14 +76,14 @@ void FCService::decodeOnePacketAsync(int streamIndex, void *userData)
 		});
 }
 
-void FCService::decodePacketsAsync(int streamIndex, int count, void *userData)
+void FCService::decodePacketsAsync(const QVector<int>& streams, int count, void *userData)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
 		for (int i = 0; i < count;)
 		{
-			auto [err, frames] = _demuxer->decodeNextPacket({ streamIndex });
+			auto [err, frames] = _demuxer->decodeNextPacket(streams);
 			_lastError = err;
 			if (_lastError == AVERROR_EOF)
 			{

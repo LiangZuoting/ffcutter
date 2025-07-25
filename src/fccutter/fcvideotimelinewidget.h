@@ -19,10 +19,15 @@ public:
 	FCVideoTimelineWidget(QWidget *parent = Q_NULLPTR);
 	~FCVideoTimelineWidget();
 
-	void setStreamIndex(int streamIndex);
-	int streamIndex() const
+	void setVideoStreamIndex(int streamIndex);
+	int videoStreamIndex() const
 	{
-		return _streamIndex;
+		return _videoStreamIndex;
+	}
+	void setAudioStreamIndex(int streamIndex);
+	int audioStreamIndex() const
+	{
+		return _audioStreamIndex;
 	}
 	void setService(const QSharedPointer<FCService>& service);
 
@@ -56,8 +61,10 @@ Q_SIGNALS:
 private:
 	Ui::FCVideoTimelineWidget ui;
 	QSharedPointer<FCService> _service;
-	int _streamIndex = -1;
+	int _videoStreamIndex = -1;
+	int _audioStreamIndex{ -1 };
 	FCVideoFrameWidget* _startFrame = nullptr;
 	FCVideoFrameWidget *_endFrame = nullptr;
 	FCLoadingDialog _loadingDialog;
+	QVector<AVFrame*> _audioFrames;
 };

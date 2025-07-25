@@ -22,7 +22,7 @@ public:
 	void setStart(bool select);
 	void setEnd(bool select);
 
-	QPixmap pixmap() const;
+	QPair<QPixmap, double> pixmap() const;
 	AVFrame* frame() const;
 	int64_t pts() const;
 	double sec() const;

@@ -1,8 +1,16 @@
 #pragma once
 
+#include <QAudioOutput>
 #include <QDialog>
 #include "ui_fcplaydialog.h"
 #include <QTimer>
+#include <QBuffer>
+#include <qelapsedtimer.h>
+
+extern "C"
+{
+#include <libavutil/frame.h>
+}
 
 class FCPlayDialog : public QDialog
 {
@@ -12,15 +20,19 @@ public:
 	FCPlayDialog(QWidget *parent = nullptr);
 	~FCPlayDialog();
 
-	void play(const QVector<QPixmap>& frames, int fps);
+	void play(const QVector<AVFrame*>& audioFrames, const QVector<QPair<QPixmap, double>>& videoFrames, int fps);
 
 private Q_SLOTS:
 	void onTimeout();
 
 private:
 	Ui::FCPlayDialogClass ui;
-	QVector<QPixmap> _frames;
+	QBuffer _audioBuffer;
+	QAudioOutput* _audioOutput;
+	QVector<QPair<QPixmap, double>> _videoFrames;
 	int _current{ 0 };
+	double _currentPts{ 0 };
+	int _fps{ 0 };
 	QTimer _timer;
 };
 

@@ -17,9 +17,14 @@ FCVideoTimelineWidget::~FCVideoTimelineWidget()
 {
 }
 
-void FCVideoTimelineWidget::setStreamIndex(int streamIndex)
+void FCVideoTimelineWidget::setVideoStreamIndex(int streamIndex)
 {
-	_streamIndex = streamIndex;
+	_videoStreamIndex = streamIndex;
+}
+
+void FCVideoTimelineWidget::setAudioStreamIndex(int streamIndex)
+{
+	_audioStreamIndex = streamIndex;
 }
 
 void FCVideoTimelineWidget::setService(const QSharedPointer<FCService>& service)
@@ -31,7 +36,14 @@ void FCVideoTimelineWidget::setService(const QSharedPointer<FCService>& service)
 
 void FCVideoTimelineWidget::decodeOnce()
 {
-	_service->decodePacketsAsync(_streamIndex, 3 * 1000 / _service->fps(_streamIndex), this);
+	_audioFrames.clear();
+	QVector<int> streams;
+	streams.push_back(_videoStreamIndex);
+	if (_audioStreamIndex >= 0)
+	{
+		streams.push_back(_audioStreamIndex);
+	}
+	_service->decodePacketsAsync(streams, 10 * 1000 / _service->fps(_videoStreamIndex), this);
 	_loadingDialog.exec2(tr(u8"½âÂë..."));
 }
 
@@ -77,7 +89,7 @@ void FCVideoTimelineWidget::appendFrames(const QList<FCFrame>& frames)
 {
 	for (auto frame : frames)
 	{
-		if (_streamIndex == frame.streamIndex)
+		if (_videoStreamIndex == frame.streamIndex)
 		{
 			FCVideoFrameWidget* widget = new FCVideoFrameWidget(this);
 			connect(widget, SIGNAL(leftDoubleClicked()), SLOT(onVideoFrameLeftClicked()));
@@ -86,8 +98,12 @@ void FCVideoTimelineWidget::appendFrames(const QList<FCFrame>& frames)
 			connect(widget, SIGNAL(stopSelect(const QPoint &)), SIGNAL(stopSelect(const QPoint &)));
 			ui.timelineLayout->addWidget(widget);
 			widget->setService(_service);
-			widget->setStreamIndex(_streamIndex);
+			widget->setStreamIndex(_videoStreamIndex);
 			widget->setFrame(frame.frame);
+		}
+		else if (_audioStreamIndex == frame.streamIndex)
+		{
+			_audioFrames.push_back(frame.frame);
 		}
 	}
 }
@@ -164,16 +180,16 @@ void FCVideoTimelineWidget::onVideoFrameRightClicked()
 
 void FCVideoTimelineWidget::onPlayClicked()
 {
-	QVector<QPixmap> frames;
+	QVector<QPair<QPixmap, double>> frames;
 	for (auto frameWidget : findChildren<FCVideoFrameWidget*>())
 	{
 		frames.push_back(frameWidget->pixmap());
 	}
 
-	int fps = _service->fps(_streamIndex);
+	int fps = _service->fps(_videoStreamIndex);
 
 	FCPlayDialog dialog;
-	dialog.play(frames, fps);
+	dialog.play(_audioFrames, frames, fps);
 }
 
 void FCVideoTimelineWidget::clear()

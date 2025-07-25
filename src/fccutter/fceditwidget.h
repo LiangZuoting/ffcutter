@@ -31,6 +31,7 @@ Q_SIGNALS:
 	void seekFinished(int streamIndex, QList<FCFrame> frames, void *userData);
 	void delogoClicked(int);
 	void masaicClicked(int);
+	void audioStreamChanged(int);
 
 private Q_SLOTS:
 	void onFastSeekClicked();
