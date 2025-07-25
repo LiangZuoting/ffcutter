@@ -130,6 +130,7 @@
     <ClCompile Include="..\src\fccutter\fcmainwidget.cpp" />
     <ClCompile Include="..\src\fccutter\fcmainwindow.cpp" />
     <ClCompile Include="..\src\fccutter\fcplaydialog.cpp" />
+    <ClCompile Include="..\src\fccutter\fcplayer.cpp" />
     <ClCompile Include="..\src\fccutter\fcsimpletimelinewidget.cpp" />
     <ClCompile Include="..\src\fccutter\fcvideoframewidget.cpp" />
     <ClCompile Include="..\src\fccutter\fcvideotimelinewidget.cpp" />
@@ -164,6 +165,9 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="..\src\fccutter\fcplaydialog.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="..\src\fccutter\fcplayer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

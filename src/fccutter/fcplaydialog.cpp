@@ -1,7 +1,9 @@
 #include "fcplaydialog.h"
 #include <QAudioFormat>
 #include <QAudioOutput>
+#include <qdatetime.h>
 #include <QDebug>
+#include <qelapsedtimer.h>
 
 FCPlayDialog::FCPlayDialog(QWidget *parent)
 	: QDialog(parent)
@@ -76,23 +78,31 @@ void FCPlayDialog::play(const QVector<AVFrame*>& audioFrames, const QVector<QPai
 	_videoFrames = videoFrames;
 	_fps = fps;
 	_current = 0;
+	_currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0;
 	const auto& frame = videoFrames[_current];
 	_currentPts = frame.second;
 	ui.player->setPixmap(frame.first);
 	_timer.start(10);
+	_elapsedTimer.start();
 	exec();
 }
 
 void FCPlayDialog::onTimeout()
 {
+	qDebug() << "time:" << _elapsedTimer.elapsed();
+	_elapsedTimer.start();
 	auto next = _current + 1;
 	if (next < _videoFrames.size())
 	{
 		auto nextPts = _videoFrames[next].second;
-		if (nextPts - _currentPts >= 1.0 / _fps)
+		auto now = QDateTime::currentMSecsSinceEpoch() / 1000.0;
+		auto timeDelta = now - _currentTime;
+		auto ptsDelta = nextPts - _currentPts;
+		if (timeDelta >= ptsDelta)
 		{
 			_currentPts = nextPts;
 			_current = next;
+			_currentTime = now;
 			ui.player->setPixmap(_videoFrames[_current].first);
 		}
 	}

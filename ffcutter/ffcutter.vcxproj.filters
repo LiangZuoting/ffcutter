@@ -65,6 +65,9 @@
     <ClCompile Include="..\src\fccutter\fcplaydialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\fccutter\fcplayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="..\src\fccutter\fcmainwindow.h">
@@ -95,6 +98,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="..\src\fccutter\fcplaydialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="..\src\fccutter\fcplayer.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>

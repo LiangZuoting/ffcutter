@@ -32,7 +32,9 @@ private:
 	QVector<QPair<QPixmap, double>> _videoFrames;
 	int _current{ 0 };
 	double _currentPts{ 0 };
+	double _currentTime{ 0 };
 	int _fps{ 0 };
 	QTimer _timer;
+	QElapsedTimer _elapsedTimer;
 };
 
