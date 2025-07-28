@@ -31,7 +31,7 @@ public:
 	void endSelect();
 
 protected:
-	void mouseDoubleClickEvent(QMouseEvent* event);
+	void mouseDoubleClickEvent(QMouseEvent* event) override;
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseReleaseEvent(QMouseEvent *event) override;
 
