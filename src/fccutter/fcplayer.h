@@ -20,6 +20,10 @@ public:
     ~FCPlayer();
 
 	void setup(const QVector<AVFrame*>& audioFrames, const QVector<QPair<QPixmap, double>>& videoFrames);
+	void start();
+
+signals:
+	void finished();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -29,11 +33,10 @@ private Q_SLOTS:
 
 private:
 	QBuffer _audioBuffer;
-	QAudioOutput* _audioOutput;
+	QAudioOutput* _audioOutput{};
 	QVector<QPair<QPixmap, double>> _videoFrames;
 	int _current{ 0 };
 	double _currentPts{ 0 };
 	double _currentTime{ 0 };
 	QTimer _timer;
-	QElapsedTimer _elapsedTimer;
 };

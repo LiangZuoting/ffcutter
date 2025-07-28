@@ -16,74 +16,82 @@ void FCPlayer::setup(const QVector<AVFrame*>& audioFrames, const QVector<QPair<Q
 {
 	if (!audioFrames.isEmpty())
 	{
+		const auto& frame = audioFrames[0];
+		auto sampleFormat = static_cast<AVSampleFormat>(frame->format);
+		auto bytesPerSample = av_get_bytes_per_sample(sampleFormat);
+		auto channels = frame->ch_layout.nb_channels;
+		auto samples = frame->nb_samples;
+		auto sampleRate = frame->sample_rate;
+
 		_audioBuffer.open(QIODevice::ReadWrite);
-		QDataStream out(&_audioBuffer);
+		QDataStream stream(&_audioBuffer);
 		for (const auto& frame : audioFrames)
 		{
-			auto format = static_cast<AVSampleFormat>(frame->format);
-			auto bytesPerSample = av_get_bytes_per_sample(format);
-			auto channels = frame->ch_layout.nb_channels;
-			auto samples = frame->nb_samples;
-			auto size = samples * bytesPerSample * channels;
-
-			if (av_sample_fmt_is_planar(format))
+			if (av_sample_fmt_is_planar(sampleFormat))
 			{
-				QByteArray buffer(size, 0);
 				for (auto i = 0; i < samples; ++i)
 				{
 					for (auto channel = 0; channel < channels; ++channel)
 					{
-						memcpy(buffer.data() + (i * channels + channel) * bytesPerSample, frame->data[channel] + i * bytesPerSample, bytesPerSample);
+						stream.writeRawData(reinterpret_cast<char*>(frame->data[channel]) + i * bytesPerSample, bytesPerSample);
 					}
 				}
-				out.writeRawData(buffer.data(), size);
 			}
 			else
 			{
-				out.writeRawData(reinterpret_cast<const char*>(frame->data[0]), size);
+				auto size = samples * bytesPerSample * channels;
+				stream.writeRawData(reinterpret_cast<const char*>(frame->data[0]), size);
 			}
 		}
 
-		QAudioFormat fmt;
-		fmt.setCodec("audio/pcm");
-		fmt.setByteOrder(QAudioFormat::LittleEndian);
-		fmt.setSampleRate(audioFrames[0]->sample_rate);
-		fmt.setChannelCount(audioFrames[0]->ch_layout.nb_channels);
-		auto sampleFormat = static_cast<AVSampleFormat>(audioFrames[0]->format);
-		fmt.setSampleSize(av_get_bytes_per_sample(sampleFormat) * 8);
+		QAudioFormat audioFormat;
+		audioFormat.setCodec("audio/pcm");
+		audioFormat.setByteOrder(QAudioFormat::LittleEndian);
+		audioFormat.setSampleRate(sampleRate);
+		audioFormat.setChannelCount(channels);
+		audioFormat.setSampleSize(av_get_bytes_per_sample(sampleFormat) * 8);
 		if (sampleFormat == AV_SAMPLE_FMT_S32 || sampleFormat == AV_SAMPLE_FMT_S32P)
 		{
-			fmt.setSampleType(QAudioFormat::SignedInt);
+			audioFormat.setSampleType(QAudioFormat::SignedInt);
 		}
 		else if (sampleFormat == AV_SAMPLE_FMT_FLT || sampleFormat == AV_SAMPLE_FMT_FLTP)
 		{
-			fmt.setSampleType(QAudioFormat::Float);
+			audioFormat.setSampleType(QAudioFormat::Float);
 		}
 
-		auto s = QAudioDeviceInfo::availableDevices(QAudio::AudioOutput);
-		QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-		if (info.isFormatSupported(fmt))
+		if (QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice()); info.isFormatSupported(audioFormat))
 		{
-			_audioOutput = new QAudioOutput(fmt, this);
-			_audioBuffer.seek(0);
-			_audioOutput->start(&_audioBuffer);
+			_audioOutput = new QAudioOutput(audioFormat, this);
+			connect(_audioOutput, &QAudioOutput::stateChanged, this, [this](QAudio::State state) {
+				if (state == QAudio::IdleState)
+				{
+					_audioOutput->stop();
+					emit finished();
+				}
+				});
 		}
 	}
 
 	_videoFrames = videoFrames;
+}
+
+void FCPlayer::start()
+{
+	if (_audioOutput)
+	{
+		_audioBuffer.seek(0);
+		_audioOutput->start(&_audioBuffer);
+	}
 	_current = 0;
 	_currentTime = QDateTime::currentMSecsSinceEpoch() / 1000.0;
-	const auto& frame = videoFrames[_current];
+	const auto& frame = _videoFrames[_current];
 	_currentPts = frame.second;
 	_timer.start(5);
-	_elapsedTimer.start();
 	update();
 }
 
 void FCPlayer::paintEvent(QPaintEvent* event)
 {
-	qDebug() << "time:" << _elapsedTimer.elapsed();
-	_elapsedTimer.start();
 	QPainter painter(this);
 
 	const auto& pixmap = _videoFrames[_current].first;
@@ -109,12 +117,16 @@ void FCPlayer::onTimeout()
 		auto ptsDelta = nextPts - _currentPts;
 		if (timeDelta >= ptsDelta)
 		{
-			qDebug() << "timeDelta:" << timeDelta << "ptsDelta:" << ptsDelta;
 			_currentPts = nextPts;
 			_current = next;
 			_currentTime = now;
 			update();
 		}
+	}
+	else
+	{
+		_timer.stop();
+		emit finished();
 	}
 }
 

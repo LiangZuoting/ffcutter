@@ -6,12 +6,22 @@
 #include <qelapsedtimer.h>
 
 FCPlayDialog::FCPlayDialog(QWidget *parent)
-	: QDialog(parent)
+	: QDialog(parent, Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint)
 {
 	ui.setupUi(this);
 
 	_player = new FCPlayer(this);
-	ui.verticalLayout->addWidget(_player);
+	ui.verticalLayout->insertWidget(0, _player);
+	connect(_player, &FCPlayer::finished, this, [this]
+	{
+			ui.playBtn->setEnabled(true);
+	});
+
+	connect(ui.playBtn, &QPushButton::clicked, this, [this]
+	{
+			ui.playBtn->setEnabled(false);
+			_player->start();
+		});
 }
 
 FCPlayDialog::~FCPlayDialog()
@@ -19,7 +29,8 @@ FCPlayDialog::~FCPlayDialog()
 
 void FCPlayDialog::play(const QVector<AVFrame*>& audioFrames, const QVector<QPair<QPixmap, double>>& videoFrames)
 {
+	ui.playBtn->setEnabled(false);
 	_player->setup(audioFrames, videoFrames);
-
+	_player->start();
 	exec();
 }
