@@ -57,7 +57,7 @@ void FCFileInfoWidget::onItemSelectionChanged()
 		av_dict_get_string(formatContext->metadata, &buff, ':', '\n');
 		QTime time(0, 0);
 		time = time.addSecs(formatContext->duration / AV_TIME_BASE);
-		auto text = QString("%1\nduration:%2").arg(buff).arg(time.toString("hh:mm:ss"));
+		auto text = QString("Metadata:\n%1\n\nduration: %2, bitrate: %3 kb/s, streams: %4").arg(buff).arg(time.toString("hh:mm:ss")).arg(formatContext->bit_rate / 1000).arg(formatContext->nb_streams);
 		ui.detailLabel->setText(text);
 		av_free(buff);
 	}
@@ -69,7 +69,7 @@ void FCFileInfoWidget::onItemSelectionChanged()
 		auto stream = _service->stream(streamIndex);
 		char* buff = nullptr;
 		av_dict_get_string(stream->metadata, &buff, ':', '\n');
-		ui.detailLabel->setText(buff);
+		ui.detailLabel->setText(QString("Metadata:\n%1\n\n%2 kb/s").arg(buff).arg(stream->codecpar->bit_rate / 1000));
 		av_free(buff);
 	}
 }
