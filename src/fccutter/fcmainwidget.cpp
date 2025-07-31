@@ -43,7 +43,7 @@ void FCMainWidget::openFile(const QString& filePath)
 	connect(_service.data(), SIGNAL(errorOcurred(void *)), this, SLOT(onErrorOcurred(void *)));
 	_service->openFileAsync(filePath, this);
 
-	_loadingDialog.exec2(tr(u8"打开文件..."));
+	_loadingDialog.exec2(tr("鎵撳紑鏂囦欢..."));
 }
 
 void FCMainWidget::closeFile()

@@ -9,35 +9,35 @@ extern "C"
 
 struct FCFrame
 {
-	int streamIndex = -1;
-	AVFrame *frame = nullptr;
+    int streamIndex = -1;
+    AVFrame *frame = nullptr;
 };
 
 struct FCDecodeResult
 {
-	int error = 0;
-	QList<FCFrame> frames;
+    int error = 0;
+    QList<FCFrame> frames;
 };
 
 struct FCFilterResult
 {
-	int error = 0;
-	QList<AVFrame *> frames;
+    int error = 0;
+    QList<AVFrame *> frames;
 };
 
 struct FCEncodeResult
 {
-	int error = 0;
-	QList<AVPacket *> packets;
+    int error = 0;
+    QList<AVPacket *> packets;
 };
 
 /// <summary>
-/// Îö¹¹Ê±×Ô¶¯µ÷ÓÃ av_packet_unref()
+/// ææ„æ—¶è‡ªåŠ¨è°ƒç”¨ av_packet_unref()
 /// </summary>
 struct FCPacket : AVPacket
 {
-	~FCPacket()
-	{
-		av_packet_unref(this);
-	}
+    ~FCPacket()
+    {
+        av_packet_unref(this);
+    }
 };

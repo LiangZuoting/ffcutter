@@ -16,50 +16,50 @@ extern "C"
 class FCDemuxer
 {
 public:
-	~FCDemuxer();
+    ~FCDemuxer();
 
-	int open(const QString& filePath);
+    int open(const QString& filePath);
 
-	/// <summary>
-	/// seek µ½ºó±ßµÚÒ»¸ö¹Ø¼üÖ¡
-	/// </summary>
-	/// <param name="streamIndex"></param>
-	/// <param name="timestamp"></param>
-	/// <returns></returns>
-	int fastSeek(int streamIndex, int64_t timestamp);
-	/// <summary>
-	/// seek µ½Ê±¼ä´ÁÇ°±ßµÄµÚÒ»Ö¡
-	/// »á´Óºó±ßµÚÒ»¸ö¹Ø¼üÖ¡Ò»Ö±½âÂëµ½Ê±¼ä´Á´¦
-	/// </summary>
-	/// <param name="streamIndex"></param>
-	/// <param name="timestamp"></param>
-	/// <returns></returns>
-	FCDecodeResult exactSeek(int streamIndex, int64_t timestamp);
-	/// <summary>
-	/// ½âÂëÏÂÒ»Ö¡
-	/// </summary>
-	/// <param name="streamFilter">
-	/// Èç¹û²»Îª¿Õ£¬Ö»½âÂëÖ¸¶¨Á÷ÖĞµÄÖ¡£»·ñÔò½âÂëËùÓĞÁ÷ÖĞµÄÖ¡
-	/// </param>
-	/// <returns>¸ºÊıÎª´íÎóÂë£¬·ñÔò second °üº¬½âÂëºóÖ¡Êı¾İ</returns>
-	FCDecodeResult decodeNextPacket(const QVector<int>& streamFilter);
+    /// <summary>
+    /// seek åˆ°åè¾¹ç¬¬ä¸€ä¸ªå…³é”®å¸§
+    /// </summary>
+    /// <param name="streamIndex"></param>
+    /// <param name="timestamp"></param>
+    /// <returns></returns>
+    int fastSeek(int streamIndex, int64_t timestamp);
+    /// <summary>
+    /// seek åˆ°æ—¶é—´æˆ³å‰è¾¹çš„ç¬¬ä¸€å¸§
+    /// ä¼šä»åè¾¹ç¬¬ä¸€ä¸ªå…³é”®å¸§ä¸€ç›´è§£ç åˆ°æ—¶é—´æˆ³å¤„
+    /// </summary>
+    /// <param name="streamIndex"></param>
+    /// <param name="timestamp"></param>
+    /// <returns></returns>
+    FCDecodeResult exactSeek(int streamIndex, int64_t timestamp);
+    /// <summary>
+    /// è§£ç ä¸‹ä¸€å¸§
+    /// </summary>
+    /// <param name="streamFilter">
+    /// å¦‚æœä¸ä¸ºç©ºï¼Œåªè§£ç æŒ‡å®šæµä¸­çš„å¸§ï¼›å¦åˆ™è§£ç æ‰€æœ‰æµä¸­çš„å¸§
+    /// </param>
+    /// <returns>è´Ÿæ•°ä¸ºé”™è¯¯ç ï¼Œå¦åˆ™ second åŒ…å«è§£ç åå¸§æ•°æ®</returns>
+    FCDecodeResult decodeNextPacket(const QVector<int>& streamFilter);
 
-	AVFormatContext* formatContext() const;
-	QList<AVStream*> streams() const;
-	AVStream* stream(int streamIndex) const;
-	double duration(int streamIndex) const;
+    AVFormatContext* formatContext() const;
+    QList<AVStream*> streams() const;
+    AVStream* stream(int streamIndex) const;
+    double duration(int streamIndex) const;
 
-	double tsToSec(int streamIndex, int64_t timestamp) const;
-	int64_t secToTs(int streamIndex, double seconds) const;
+    double tsToSec(int streamIndex, int64_t timestamp) const;
+    int64_t secToTs(int streamIndex, double seconds) const;
 
-	void close();
+    void close();
 
 private:
-	QPair<int, QSharedPointer<FCDecoder>> getCodecContext(int streamIndex);
-	FCDecodeResult decodePacket(int streamIndex, AVPacket *packet);
+    QPair<int, QSharedPointer<FCDecoder>> getCodecContext(int streamIndex);
+    FCDecodeResult decodePacket(int streamIndex, AVPacket *packet);
 
-	AVFormatContext* _formatContext = nullptr;
-	// map from stream index to codec context
-	QMap<int, QSharedPointer<FCDecoder>> _decoders;
-	QMap<int, AVStream*> _streams;
+    AVFormatContext* _formatContext = nullptr;
+    // map from stream index to codec context
+    QMap<int, QSharedPointer<FCDecoder>> _decoders;
+    QMap<int, AVStream*> _streams;
 };

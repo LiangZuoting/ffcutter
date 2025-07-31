@@ -26,19 +26,17 @@ class FCCORE_EXPORT FCService : public QObject
     Q_OBJECT
 
 public:
-    inline static const int DEMUX_INDEX = -1;
-
     FCService();
     ~FCService();
 
     /// <summary>
-    /// ²»¿ÉÖØÈë
+    /// ä¸å¯é‡å…¥
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>
     void openFileAsync(const QString& filePath, void *userData);
     void decodeOnePacketAsync(int streamIndex, void *userData);
-    void decodePacketsAsync(const QVector<int>& streams, int count, void *userData);
+    void decodePacketsAsync(const QVector<int>& streams, int videoFrameCount, void *userData);
 
     AVFormatContext* formatContext() const;
     AVStream* stream(int streamIndex) const;
@@ -54,7 +52,7 @@ public:
     void fastSeekAsync(int streamIndex, double seconds, void *userData);
     void exactSeekAsync(int streamIndex, double seconds, void *userData);
     /// <summary>
-    /// ½«ÊÓÆµ frame Ëõ·Åµ½Ö¸¶¨·Ö±æÂÊ£¬²¢×ª»»³É RGB24 ¸ñÊ½µÄ Pixmap
+    /// å°†è§†é¢‘ frame ç¼©æ”¾åˆ°æŒ‡å®šåˆ†è¾¨ç‡ï¼Œå¹¶è½¬æ¢æˆ RGB24 æ ¼å¼çš„ Pixmap
     /// </summary>
     /// <param name="frame"></param>
     /// <param name="dstWidth"></param>

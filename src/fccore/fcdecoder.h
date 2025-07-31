@@ -10,15 +10,15 @@ extern "C"
 class FCDecoder
 {
 public:
-	~FCDecoder();
+    ~FCDecoder();
 
-	int open(const AVStream *stream);
-	void close();
+    int open(const AVStream *stream);
+    void close();
 
-	void flushBuffers();
-	FCDecodeResult decodePacket(AVPacket *packet);
+    void flushBuffers();
+    FCDecodeResult decodePacket(AVPacket *packet);
 
 private:
-	AVCodecContext *_context = nullptr;
-	int _streamIndex = -1;
+    AVCodecContext *_context = nullptr;
+    int _streamIndex = -1;
 };

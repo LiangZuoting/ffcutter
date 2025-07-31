@@ -7,6 +7,10 @@ FCPlayer::FCPlayer(QWidget *parent)
     : QOpenGLWidget(parent)
 {
     connect(&_timer, &QTimer::timeout, this, &FCPlayer::onTimeout);
+
+	_dumpLabel = new QLabel(parent);
+	_dumpLabel->move(8, 0);
+	_dumpLabel->setStyleSheet("QLabel { color: red; font-size: 14pt; }");
 }
 
 FCPlayer::~FCPlayer()
@@ -87,7 +91,19 @@ void FCPlayer::start()
 	const auto& frame = _videoFrames[_current];
 	_currentPts = frame.second;
 	_timer.start(5);
+	_dumpLabel->setText(QString::number(_current + 1));
 	update();
+}
+
+void FCPlayer::setVolume(int value)
+{
+	if (_audioOutput)
+	{
+		auto volume = value / 100.0;
+		if (volume < 0.0) volume = 0.0;
+		else if (volume > 1.0) volume = 1.0;
+		_audioOutput->setVolume(volume);
+	}
 }
 
 void FCPlayer::paintEvent(QPaintEvent* event)
@@ -120,6 +136,7 @@ void FCPlayer::onTimeout()
 			_currentPts = nextPts;
 			_current = next;
 			_currentTime = now;
+			_dumpLabel->setText(QString::number(_current + 1));
 			update();
 		}
 	}

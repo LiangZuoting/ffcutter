@@ -4,7 +4,7 @@
 #include <QTimer>
 #include <QBuffer>
 #include <QAudioOutput>
-#include <qelapsedtimer.h>
+#include <QLabel>
 
 extern "C"
 {
@@ -21,6 +21,7 @@ public:
 
 	void setup(const QVector<AVFrame*>& audioFrames, const QVector<QPair<QPixmap, double>>& videoFrames);
 	void start();
+	void setVolume(int value);
 
 signals:
 	void finished();
@@ -39,4 +40,5 @@ private:
 	double _currentPts{ 0 };
 	double _currentTime{ 0 };
 	QTimer _timer;
+	QLabel* _dumpLabel{};
 };

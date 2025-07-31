@@ -43,7 +43,7 @@ void FCVideoTimelineWidget::decodeOnce()
     {
         streams.push_back(_audioStreamIndex);
     }
-    _service->decodePacketsAsync(streams, 10 * 1000 / _service->fps(_videoStreamIndex), this);
+    _service->decodePacketsAsync(streams, 10 * _service->fps(_videoStreamIndex), this);
     _loadingDialog.exec2(tr("解码..."));
 }
 

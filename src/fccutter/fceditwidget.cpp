@@ -118,7 +118,7 @@ void FCEditWidget::onFastSeekClicked()
     }
 
     _service->fastSeekAsync(_streamIndex, FCUtil::durationSecs(QTime(0,0), ui.seekEdit->time()), this);
-    _loadingDialog.exec2(tr(u8"跳转..."));
+    _loadingDialog.exec2(tr("跳转..."));
 }
 
 void FCEditWidget::onExactSeekClicked()
@@ -129,7 +129,7 @@ void FCEditWidget::onExactSeekClicked()
     }
 
     _service->exactSeekAsync(_streamIndex, FCUtil::durationSecs(QTime(0, 0), ui.seekEdit->time()), this);
-    _loadingDialog.exec2(tr(u8"跳转..."));
+    _loadingDialog.exec2(tr("跳转..."));
 }
 
 void FCEditWidget::onSaveClicked()
@@ -168,7 +168,7 @@ void FCEditWidget::onSaveClicked()
             makeSubtitleFilter(vFilters);
             muxEntry.vFilterString = vFilters;
             _service->saveAsync(muxEntry, this);
-            _loadingDialog.exec2(tr(u8"保存..."));
+            _loadingDialog.exec2(tr("保存..."));
         }
     }
 }

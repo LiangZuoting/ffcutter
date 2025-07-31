@@ -12,6 +12,7 @@ FCPlayDialog::FCPlayDialog(QWidget *parent)
 
 	_player = new FCPlayer(this);
 	ui.verticalLayout->insertWidget(0, _player);
+
 	connect(_player, &FCPlayer::finished, this, [this]
 	{
 			ui.playBtn->setEnabled(true);
@@ -21,6 +22,11 @@ FCPlayDialog::FCPlayDialog(QWidget *parent)
 	{
 			ui.playBtn->setEnabled(false);
 			_player->start();
+	});
+	connect(ui.volumeSlider, &QSlider::valueChanged, this, [this](int value)
+		{
+			_player->setVolume(value);
+            ui.volumeLabel->setText(QString::number(value));
 		});
 }
 
@@ -31,6 +37,7 @@ void FCPlayDialog::play(const QVector<AVFrame*>& audioFrames, const QVector<QPai
 {
 	ui.playBtn->setEnabled(false);
 	_player->setup(audioFrames, videoFrames);
+	_player->setVolume(ui.volumeSlider->value());
 	_player->start();
 	exec();
 }

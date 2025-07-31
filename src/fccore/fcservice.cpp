@@ -76,12 +76,12 @@ void FCService::decodeOnePacketAsync(int streamIndex, void *userData)
 		});
 }
 
-void FCService::decodePacketsAsync(const QVector<int>& streams, int count, void *userData)
+void FCService::decodePacketsAsync(const QVector<int>& streams, int videoFrameCount, void *userData)
 {
 	QMutexLocker _(&_mutex);
 	QtConcurrent::run(_threadPool, [=]() {
 		QMutexLocker _(&_mutex);
-		for (int i = 0; i < count;)
+		for (int i = 0; i < videoFrameCount;)
 		{
 			auto [err, frames] = _demuxer->decodeNextPacket(streams);
 			_lastError = err;
@@ -96,7 +96,13 @@ void FCService::decodePacketsAsync(const QVector<int>& streams, int count, void 
 				emit errorOcurred(userData);
 				return;
 			}
-			++i;
+			for (const auto& frame : frames)
+			{
+				if (frame.frame->width > 0 && frame.frame->height > 0)
+				{
+					++i;
+				}
+            }
 			emit frameDeocded(frames, userData);
 		}
 		emit decodeFinished(userData);
@@ -196,7 +202,7 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry, void *userData)
 	QtConcurrent::run(_threadPool, [=]() {
 		auto entry = muxEntry;
 		QMutexLocker _(&_mutex);
-		// °´ÊÓÆµÁ÷ seek µ½ºó±ßµÄ¹Ø¼üÖ¡
+		// æŒ‰è§†é¢‘æµ seek åˆ°åŽè¾¹çš„å…³é”®å¸§
 		auto vStartPts = _demuxer->secToTs(entry.vStreamIndex, entry.startSec);
 		_demuxer->fastSeek(entry.vStreamIndex, vStartPts);
 
@@ -242,7 +248,7 @@ void FCService::saveAsync(const FCMuxEntry &muxEntry, void *userData)
 			if (_lastError == AVERROR_EOF)
 			{
 				_lastError = 0;
-				for (auto i : streamFilter) // Î²²¿·ÅÒ»¸ö¿ÕÖ¡£¬flush filter & encoder ÓÃ
+				for (auto i : streamFilter) // å°¾éƒ¨æ”¾ä¸€ä¸ªç©ºå¸§ï¼Œflush filter & encoder ç”¨
 				{
 					decodedFrames.push_back({ i, nullptr });
 				}
