@@ -148,12 +148,10 @@ void FCEditWidget::onSaveClicked()
             muxEntry.endSec = FCUtil::durationSecs(QTime(0,0), ui.endSecEdit->time());
             muxEntry.vStreamIndex = _streamIndex;
             muxEntry.pixelFormat = (AVPixelFormat)stream->codecpar->format;
-            muxEntry.vBitrate = stream->codecpar->bit_rate;
             muxEntry.aStreamIndex = aStreamIndex;
             if (aStream)
             {
                 muxEntry.sampleFormat = (AVSampleFormat)aStream->codecpar->format;
-                muxEntry.aBitrate = aStream->codecpar->bit_rate;
                 muxEntry.sampleRate = aStream->codecpar->sample_rate;
                 muxEntry.channelLayout = &aStream->codecpar->ch_layout;
             }

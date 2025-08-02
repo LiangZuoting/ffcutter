@@ -21,21 +21,21 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
             auto codec = avcodec_find_encoder(codecId);
             _context = avcodec_alloc_context3(codec);
             _context->time_base = { 1, muxEntry.fps };
-            _context->bit_rate = muxEntry.vBitrate;
             _context->width = muxEntry.width;
             _context->height = muxEntry.height;
-            _context->gop_size = muxEntry.gop;
-            // 请求的格式优先，不支持时用第一个
-            _context->pix_fmt = codec->pix_fmts[0];
-            for (int i = 0; ; ++i)
+            _context->gop_size = muxEntry.gop * muxEntry.fps;
+            const AVPixelFormat* pixFormats{};
+            int numOfConfigs = 0;
+            if (ret = avcodec_get_supported_config(_context, codec, AV_CODEC_CONFIG_PIX_FORMAT, 0, reinterpret_cast<const void**>(&pixFormats), &numOfConfigs); ret)
             {
-                if (auto fmt = codec->pix_fmts[i]; fmt == AV_PIX_FMT_NONE)
+                FCUtil::printAVError(ret, "avcodec_get_supported_config");
+                break;
+            }
+            for (int i = 0; i < numOfConfigs; ++i)
+            {
+                if (pixFormats[i] == muxEntry.pixelFormat)
                 {
-                    break;
-                }
-                else if (fmt == muxEntry.pixelFormat)
-                {
-                    _context->pix_fmt = fmt;
+                    _context->pix_fmt = muxEntry.pixelFormat;
                     break;
                 }
             }
@@ -51,8 +51,6 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 
             _stream = avformat_new_stream(_formatContext, codec);
             _stream->id = _formatContext->nb_streams - 1;
-            _stream->time_base = _context->time_base;
-            _stream->avg_frame_rate = _context->framerate;
             if (ret = avcodec_parameters_from_context(_stream->codecpar, _context); ret)
             {
                 FCUtil::printAVError(ret, "avcodec_parameters_from_context");
