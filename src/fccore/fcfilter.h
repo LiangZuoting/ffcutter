@@ -32,6 +32,4 @@ protected:
 	AVFilterGraph *_graph = nullptr;
 	AVFilterContext *_srcContext = nullptr;
 	AVFilterContext *_sinkContext = nullptr;
-	AVFilterInOut *_inputs = nullptr;
-	AVFilterInOut *_outputs = nullptr;
 };
