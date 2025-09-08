@@ -148,7 +148,7 @@ void FCMainWidget::selectStreamItem(int streamIndex)
 			delete _vTimelineWidget;
 			_vTimelineWidget = nullptr;
 		}
-		_opWidget->setCurrentStream(_streamIndex);
+		_opWidget->setVideoStream(_streamIndex);
 
 		_vTimelineWidget = new FCVideoTimelineWidget(this);
 		connect(_vTimelineWidget, SIGNAL(startSelected()), this, SLOT(onStartFrameSelected()));

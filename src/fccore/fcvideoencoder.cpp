@@ -31,13 +31,10 @@ int FCVideoEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
                 FCUtil::printAVError(ret, "avcodec_get_supported_config");
                 break;
             }
-            for (int i = 0; i < numOfConfigs; ++i)
+            assert(numOfConfigs > 0);
+            if (numOfConfigs > 0)
             {
-                if (pixFormats[i] == muxEntry.pixelFormat)
-                {
-                    _context->pix_fmt = muxEntry.pixelFormat;
-                    break;
-                }
+                _context->pix_fmt = pixFormats[0];
             }
             /*
             * H264 codec 不能 set 这个 flag，否则文件不能解析；

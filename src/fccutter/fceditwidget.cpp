@@ -50,9 +50,9 @@ void FCEditWidget::setService(const QSharedPointer<FCService> &service)
     }
 }
 
-void FCEditWidget::setCurrentStream(int streamIndex)
+void FCEditWidget::setVideoStream(int streamIndex)
 {
-    _streamIndex = streamIndex;
+    _videoStreamIndex = streamIndex;
     auto stream = _service->stream(streamIndex);
     ui.widthEdit->setText(QString::number(stream->codecpar->width));
     ui.heightEdit->setText(QString::number(stream->codecpar->height));
@@ -112,49 +112,42 @@ void FCEditWidget::setMasaicStop(const QPoint &pos)
 
 void FCEditWidget::onFastSeekClicked()
 {
-    if (_streamIndex < 0)
+    if (_videoStreamIndex < 0)
     {
         return;
     }
 
-    _service->fastSeekAsync(_streamIndex, FCUtil::durationSecs(QTime(0,0), ui.seekEdit->time()), this);
+    _service->fastSeekAsync(_videoStreamIndex, FCUtil::durationSecs(QTime(0,0), ui.seekEdit->time()), this);
     _loadingDialog.exec2(tr("跳转..."));
 }
 
 void FCEditWidget::onExactSeekClicked()
 {
-    if (_streamIndex < 0)
+    if (_videoStreamIndex < 0)
     {
         return;
     }
 
-    _service->exactSeekAsync(_streamIndex, FCUtil::durationSecs(QTime(0, 0), ui.seekEdit->time()), this);
+    _service->exactSeekAsync(_videoStreamIndex, FCUtil::durationSecs(QTime(0, 0), ui.seekEdit->time()), this);
     _loadingDialog.exec2(tr("跳转..."));
 }
 
 void FCEditWidget::onSaveClicked()
 {
-    auto stream = _service->stream(_streamIndex);
+    auto stream = _service->stream(_videoStreamIndex);
     auto aStreamIndex = ui.audioComboBox->currentData().toInt();
     auto aStream = _service->stream(aStreamIndex);
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
     {
-        auto filePath = QFileDialog::getSaveFileName(this, tr("保存文件"), QString(), "jpg (*.jpg);;webp (*.webp);;gif (*.gif);;mp4 (*.mp4)");
+        auto filePath = QFileDialog::getSaveFileName(this, tr("保存文件"), QString(), "mp4 (*.mp4);;webp (*.webp);;gif (*.gif);;jpg (*.jpg)");
         if (!filePath.isEmpty())
         {
             FCMuxEntry muxEntry;
             muxEntry.filePath = filePath;
             muxEntry.startSec = FCUtil::durationSecs(QTime(0,0), ui.startSecEdit->time());
             muxEntry.endSec = FCUtil::durationSecs(QTime(0,0), ui.endSecEdit->time());
-            muxEntry.vStreamIndex = _streamIndex;
-            muxEntry.pixelFormat = (AVPixelFormat)stream->codecpar->format;
+            muxEntry.vStreamIndex = _videoStreamIndex;
             muxEntry.aStreamIndex = aStreamIndex;
-            if (aStream)
-            {
-                muxEntry.sampleFormat = (AVSampleFormat)aStream->codecpar->format;
-                muxEntry.sampleRate = aStream->codecpar->sample_rate;
-                muxEntry.channelLayout = &aStream->codecpar->ch_layout;
-            }
 
             QString vFilters;
             makeDelogoFilter(vFilters);

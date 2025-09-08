@@ -15,7 +15,7 @@ public:
 	FCEditWidget(const QSharedPointer<FCService> &service, FCMainWidget *parent = Q_NULLPTR);
 	~FCEditWidget();
 
-	void setCurrentStream(int streamIndex);
+	void setVideoStream(int streamIndex);
 
 	void setStartSec(double startSec);
 	void setEndSec(double endInSec);
@@ -59,6 +59,6 @@ private:
 
 	Ui::FCEditWidget ui;
 	QSharedPointer<FCService> _service;
-	int _streamIndex = -1;
+	int _videoStreamIndex = -1;
 	FCLoadingDialog _loadingDialog;
 };

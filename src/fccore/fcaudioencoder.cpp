@@ -18,7 +18,6 @@ int FCAudioEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 	{
 		auto codec = avcodec_find_encoder(_formatContext->oformat->audio_codec);
 		_context = avcodec_alloc_context3(codec);
-		_context->time_base = { 1, muxEntry.sampleRate };
 		const AVSampleFormat* sampleFormats{};
 		int numOfConfigs{};
 		if (ret = avcodec_get_supported_config(_context, codec, AV_CODEC_CONFIG_SAMPLE_FORMAT, 0, reinterpret_cast<const void**>(&sampleFormats), &numOfConfigs); ret)
@@ -26,31 +25,14 @@ int FCAudioEncoder::create(AVFormatContext *formatContext, const FCMuxEntry &mux
 			FCUtil::printAVError(ret, "avcodec_get_supported_config");
 			break;
 		}
-		for (int i = 0; i < numOfConfigs; ++i)
+		assert(numOfConfigs > 0);
+		if (numOfConfigs > 0)
 		{
-			if (sampleFormats[i] == muxEntry.sampleFormat)
-			{
-				_context->sample_fmt = muxEntry.sampleFormat;
-				break;
-			}
+			_context->sample_fmt = sampleFormats[0];
 		}
-		_context->sample_rate = muxEntry.sampleRate;
-		const AVChannelLayout* configs{ nullptr };
-		numOfConfigs = 0;
-		ret = avcodec_get_supported_config(_context, codec, AV_CODEC_CONFIG_CHANNEL_LAYOUT, 0, reinterpret_cast<const void**>(&configs), &numOfConfigs);
-		for (int i = 0; i < numOfConfigs; ++i)
-		{
-			auto layout = configs[i];
-			if (!av_channel_layout_compare(&layout, muxEntry.channelLayout))
-			{
-				ret = av_channel_layout_copy(&_context->ch_layout, muxEntry.channelLayout);
-				break;
-			}
-		}
-		if (!av_channel_layout_check(&_context->ch_layout))
-		{
-			av_channel_layout_default(&_context->ch_layout, 2);
-		}
+		_context->sample_rate = 44100;
+		av_channel_layout_default(&_context->ch_layout, 2);
+		_context->time_base = { 1, _context->sample_rate };
 		if (_formatContext->oformat->flags & AVFMT_GLOBALHEADER)
 		{
 			_context->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;

@@ -16,7 +16,6 @@ struct FCMuxEntry
 	double endSec = 0; // end time in second
 	// video
 	int vStreamIndex = -1;
-	AVPixelFormat pixelFormat = AV_PIX_FMT_NONE;
 	int width = 0;
 	int height = 0;
 	int fps = 0;
@@ -24,9 +23,6 @@ struct FCMuxEntry
 	QString vFilterString;
 	// audio
 	int aStreamIndex = -1;
-	AVSampleFormat sampleFormat = AV_SAMPLE_FMT_NONE;
-	int sampleRate = 0;
-	AVChannelLayout* channelLayout{};
 	QString aFilterString;
 };
 

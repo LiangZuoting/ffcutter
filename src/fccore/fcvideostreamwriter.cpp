@@ -36,12 +36,6 @@ int FCVideoStreamWriter::createFilter()
 		return 0;
 	}
 	_filter.reset(new FCVideoFilter());
-	auto filters = _entry.vFilterString;
-	if (!filters.isEmpty())
-	{
-		filters.append(',');
-	}
-	filters.append("format=").append(av_get_pix_fmt_name(_muxer.videoFormat()));
 	auto srcStream = _demuxer->stream(_inStreamIndex);
 	FCVideoFilterParameters params{};
 	params.srcWidth = srcStream->codecpar->width;
@@ -50,6 +44,6 @@ int FCVideoStreamWriter::createFilter()
 	params.srcSampleAspectRatio = srcStream->sample_aspect_ratio;
 	params.dstPixelFormat = _muxer.videoFormat();
 	params.srcTimeBase = srcStream->time_base;
-	params.filterString = filters;
+	params.filterString = _entry.vFilterString;
 	return _filter->create(params);
 }

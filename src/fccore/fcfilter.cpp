@@ -117,25 +117,38 @@ int FCFilter::create(const FCFilterParameters &params, const AVFilter *srcFilter
 		}
 
 		auto strFilter = params.filterString.toStdString();
-		AVFilterInOut* inputs{};
-        AVFilterInOut* outputs{};
-		if (ret = avfilter_graph_parse2(_graph, strFilter.data(), &inputs, &outputs); ret < 0)
+		if (strFilter.empty())
 		{
-			FCUtil::printAVError(ret, "avfilter_graph_parse_ptr");
-			break;
+			ret = avfilter_link(_srcContext, 0, _sinkContext, 0);
+			if (ret < 0)
+			{
+				FCUtil::printAVError(ret, "avfilter_link");
+				break;
+            }
 		}
-		if (ret = avfilter_link(_srcContext, 0, inputs->filter_ctx, inputs->pad_idx); ret < 0)
-		{
-			FCUtil::printAVError(ret, "avfilter_link");
-			break;
-		}
-		if (ret = avfilter_link(outputs->filter_ctx, outputs->pad_idx, _sinkContext, 0); ret < 0)
-		{
-			FCUtil::printAVError(ret, "avfilter_link");
-			break;
-		}
-        avfilter_inout_free(&inputs);
-        avfilter_inout_free(&outputs);
+        else
+        {
+			AVFilterInOut* inputs{};
+			AVFilterInOut* outputs{};
+			if (ret = avfilter_graph_parse2(_graph, strFilter.data(), &inputs, &outputs); ret < 0)
+			{
+				FCUtil::printAVError(ret, "avfilter_graph_parse_ptr");
+				break;
+			}
+			if (ret = avfilter_link(_srcContext, 0, inputs->filter_ctx, inputs->pad_idx); ret < 0)
+			{
+				FCUtil::printAVError(ret, "avfilter_link");
+				break;
+			}
+			if (ret = avfilter_link(outputs->filter_ctx, outputs->pad_idx, _sinkContext, 0); ret < 0)
+			{
+				FCUtil::printAVError(ret, "avfilter_link");
+				break;
+			}
+			avfilter_inout_free(&inputs);
+			avfilter_inout_free(&outputs);
+        }
+		
 		if (ret = avfilter_graph_config(_graph, nullptr); ret < 0)
 		{
 			FCUtil::printAVError(ret, "avfilter_graph_config");
